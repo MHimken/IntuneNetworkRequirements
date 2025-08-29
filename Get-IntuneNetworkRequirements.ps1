@@ -149,6 +149,12 @@ while displaying potential issues in the console for the service area TPMAttesta
 .EXAMPLE
 This will ingest 2 files from the working directory and compare them. The comparison is written to another CSV file while also showing the results in a grid view. 
 .\Get-IntuneNetworkRequirements.ps1 -MergeResults -MergeCSVs ResultList_29072024_110030_SADAME-PC.csv,ResultList_30072024_084101_3T0M4W3.csv -ShowResults
+.EXAMPLE
+This will test all Visual Studio endpoints and verify each CRL. It will output the results in a CSV file and show the results in a gridview.
+.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\VisualStudio.csv -UseMSJSON -CheckCertRevocation -VisualStudioFull -OutputCSV -ShowResults
+.EXAMPLE
+This will test all Defender endpoints and verify each CRL. It will output the results in a CSV file and show the results in a gridview.
+.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\MicrosoftDefender.csv -UseMSJSON -CheckCertRevocation -DefenderFull -OutputCSV -ShowResults
 .NOTES
     Version: 1.3.0
     Versionname: Brandgefaehrlich
