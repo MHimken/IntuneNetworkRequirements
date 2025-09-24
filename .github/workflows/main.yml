@@ -20,7 +20,7 @@ jobs:
         file_path: './feed.json'
     
     - name: Commit and push changes to repository
-      uses: MHimken/IntuneNetworkRequirements@v1
+      uses: MHimken/IntuneNetworkRequirements@test
       with:
         commit_message: 'Update RSS feed'
         file_pattern: '*.json'
