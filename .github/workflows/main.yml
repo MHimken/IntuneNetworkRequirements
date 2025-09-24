@@ -1,0 +1,26 @@
+name: TEST RSS Feed
+
+on:
+  push:
+    branches:
+      - test
+
+jobs:
+  fetch-rss:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Fetch RSS Feed
+      uses: Promptly-Technologies-LLC/rss-fetch-action@v2
+      with:
+        feed_url: 'https://endpoints.office.com/version/worldwide?clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&allVersions=true&format=RSS&serviceAreas=MEM'
+        file_path: './feed.json'
+    
+    - name: Commit and push changes to repository
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: 'Update RSS feed'
+        file_pattern: '*.json'
