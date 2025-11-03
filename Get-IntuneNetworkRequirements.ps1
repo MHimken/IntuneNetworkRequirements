@@ -160,10 +160,10 @@ This will test all Visual Studio endpoints and verify each CRL. It will output t
 This will test all Defender endpoints and verify each CRL. It will output the results in a CSV file and show the results in a gridview.
 .\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\MicrosoftDefender.csv -UseMSJSON -CheckCertRevocation -DefenderFull -OutputCSV -ShowResults
 .NOTES
-    Version: 1.3.0
-    Versionname: Brandgefaehrlich
+    Version: 1.4.0
+    Versionname: Community-Is-Key
     Intial creation date: 19.02.2024
-    Last change date: 29.08.2025
+    Last change date: 03.11.2025
     Latest changes: https://github.com/MHimken/toolbox/tree/main/Autopilot/MEMNetworkRequirements/changelog.md
     Shoutouts: 
     * WinAdmins Community - especially Chris for helping me figure out some of the features.
