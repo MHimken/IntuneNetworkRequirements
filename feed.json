@@ -1,0 +1,591 @@
+{
+  "title": "Microsoft 365 URLs and IP Addresses - Office 365 Worldwide - MEM",
+  "link": "http://aka.ms/ipurlws",
+  "description": "",
+  "language": "en-us",
+  "generator": "",
+  "published": "2025-08-29T01:40:51.000Z",
+  "entries": [
+    {
+      "id": "2025082900",
+      "title": "2025082900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025082900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-08-29T01:40:51.000Z",
+      "description": "Version 2025082900 includes 1 changes. URLs: 0 added and 2 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2025073100",
+      "title": "2025073100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025073100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-07-31T04:43:56.000Z",
+      "description": "Version 2025073100 includes 2 changes. URLs: 5 added and 2 removed."
+    },
+    {
+      "id": "2025063000",
+      "title": "2025063000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025063000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-06-30T01:25:26.000Z",
+      "description": "Version 2025063000 includes 3 changes. URLs: 0 added and 4 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2025053000",
+      "title": "2025053000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025053000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-05-30T01:13:55.000Z",
+      "description": "Version 2025053000 includes 5 changes. URLs: 0 added and 2 removed. 3 other attributes changed."
+    },
+    {
+      "id": "2025043000",
+      "title": "2025043000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025043000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-04-30T00:17:36.000Z",
+      "description": "Version 2025043000 includes 1 changes. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2025022800",
+      "title": "2025022800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025022800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-02-28T00:22:26.000Z",
+      "description": "Version 2025022800 includes 3 changes. URLs: 2 added and 5 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2025013000",
+      "title": "2025013000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2025013000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2025-01-30T01:31:30.000Z",
+      "description": "Version 2025013000 includes 5 changes. IPs: 33 added and 3 removed. URLs: 6 added and 3 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2024103100",
+      "title": "2024103100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024103100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-10-31T03:05:31.000Z",
+      "description": "Version 2024103100 includes 2 changes. 2 other attributes changed."
+    },
+    {
+      "id": "2024093000",
+      "title": "2024093000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024093000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-09-30T01:29:11.000Z",
+      "description": "Version 2024093000 includes 2 changes. URLs: 0 added and 1 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2024090200",
+      "title": "2024090200 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024090200?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-09-02T08:04:47.000Z",
+      "description": "Version 2024090200 includes 3 changes. IPs: 0 added and 1 removed. URLs: 1 added and 2 removed. 12 other attributes changed."
+    },
+    {
+      "id": "2024073100",
+      "title": "2024073100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024073100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-07-31T02:36:43.000Z",
+      "description": "Version 2024073100 includes 10 changes. URLs: 4 added and 15 removed. 32 other attributes changed."
+    },
+    {
+      "id": "2024032900",
+      "title": "2024032900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024032900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-03-29T06:23:48.000Z",
+      "description": "Version 2024032900 includes 2 changes. URLs: 2 added and 1 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2024030100",
+      "title": "2024030100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024030100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-03-01T01:12:16.000Z",
+      "description": "Version 2024030100 includes 2 changes. URLs: 8 added and 5 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2024013000",
+      "title": "2024013000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2024013000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2024-01-30T02:14:15.000Z",
+      "description": "Version 2024013000 includes 1 changes. URLs: 1 added and 0 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2023103000",
+      "title": "2023103000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023103000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-10-30T00:54:53.000Z",
+      "description": "Version 2023103000 includes 2 changes. IPs: 6 added and 0 removed. URLs: 1 added and 0 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2023092800",
+      "title": "2023092800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023092800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-09-28T13:24:52.000Z",
+      "description": "Version 2023092800 includes 1 changes. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2023082900",
+      "title": "2023082900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023082900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-08-29T23:51:24.000Z",
+      "description": "Version 2023082900 includes 2 changes. URLs: 1 added and 1 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2023073100",
+      "title": "2023073100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023073100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-07-31T02:21:08.000Z",
+      "description": "Version 2023073100 includes 5 changes. URLs: 3 added and 4 removed."
+    },
+    {
+      "id": "2023062900",
+      "title": "2023062900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023062900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-06-29T23:52:09.000Z",
+      "description": "Version 2023062900 includes 3 changes. URLs: 16 added and 1 removed. 14 other attributes changed."
+    },
+    {
+      "id": "2023053000",
+      "title": "2023053000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023053000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-05-30T02:30:39.000Z",
+      "description": "Version 2023053000 includes 2 changes. URLs: 1 added and 3 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2023042800",
+      "title": "2023042800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023042800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-04-28T10:20:56.000Z",
+      "description": "Version 2023042800 includes 1 changes. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2023032900",
+      "title": "2023032900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023032900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-03-29T23:39:39.000Z",
+      "description": "Version 2023032900 includes 1 changes. IPs: 0 added and 17 removed. URLs: 0 added and 1 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2023030100",
+      "title": "2023030100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023030100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-03-01T01:44:07.000Z",
+      "description": "Version 2023030100 includes 2 changes. IPs: 6 added and 16 removed."
+    },
+    {
+      "id": "2023013100",
+      "title": "2023013100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023013100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-01-31T00:43:07.000Z",
+      "description": "Version 2023013100 includes 2 changes. URLs: 1 added and 2 removed. 14 other attributes changed."
+    },
+    {
+      "id": "2023010300",
+      "title": "2023010300 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2023010300?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2023-01-03T03:40:47.000Z",
+      "description": "Version 2023010300 includes 1 changes. URLs: 10 added and 0 removed."
+    },
+    {
+      "id": "2022112900",
+      "title": "2022112900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022112900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-11-29T01:06:44.000Z",
+      "description": "Version 2022112900 includes 1 changes. IPs: 1 added and 25 removed."
+    },
+    {
+      "id": "2022103100",
+      "title": "2022103100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022103100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-10-31T17:12:21.000Z",
+      "description": "Version 2022103100 includes 3 changes. IPs: 4 added and 3 removed. URLs: 2 added and 0 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2022092900",
+      "title": "2022092900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022092900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-09-29T00:09:37.000Z",
+      "description": "Version 2022092900 includes 1 changes. URLs: 9 added and 0 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2022082900",
+      "title": "2022082900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022082900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-08-29T23:39:25.000Z",
+      "description": "Version 2022082900 includes 18 changes. URLs: 42 added and 11 removed. 79 other attributes changed."
+    },
+    {
+      "id": "2022072800",
+      "title": "2022072800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022072800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-07-28T00:00:00.000Z",
+      "description": "Version 2022072800 includes 0 changes."
+    },
+    {
+      "id": "2022062900",
+      "title": "2022062900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022062900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-06-29T00:12:00.000Z",
+      "description": "Version 2022062900 includes 1 changes. IPs: 50 added and 0 removed. URLs: 2 added and 0 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2022060100",
+      "title": "2022060100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022060100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-06-01T00:00:00.000Z",
+      "description": "Version 2022060100 includes 0 changes."
+    },
+    {
+      "id": "2022042800",
+      "title": "2022042800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022042800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-04-28T23:33:39.000Z",
+      "description": "Version 2022042800 includes 2 changes. URLs: 3 added and 0 removed."
+    },
+    {
+      "id": "2022032800",
+      "title": "2022032800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022032800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-03-28T23:42:15.000Z",
+      "description": "Version 2022032800 includes 5 changes. URLs: 0 added and 7 removed. 14 other attributes changed."
+    },
+    {
+      "id": "2022022800",
+      "title": "2022022800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022022800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-02-28T23:11:22.000Z",
+      "description": "Version 2022022800 includes 14 changes. URLs: 1 added and 21 removed. 70 other attributes changed."
+    },
+    {
+      "id": "2022012800",
+      "title": "2022012800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2022012800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2022-01-28T18:12:16.000Z",
+      "description": "Version 2022012800 includes 3 changes. URLs: 0 added and 5 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2021102900",
+      "title": "2021102900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021102900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-10-29T23:59:39.000Z",
+      "description": "Version 2021102900 includes 15 changes. URLs: 0 added and 70 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2021092800",
+      "title": "2021092800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021092800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-09-28T16:52:32.000Z",
+      "description": "Version 2021092800 includes 29 changes. URLs: 71 added and 64 removed. 42 other attributes changed."
+    },
+    {
+      "id": "2021072900",
+      "title": "2021072900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021072900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-07-29T00:00:00.000Z",
+      "description": "Version 2021072900 includes 2 changes. URLs: 1 added and 1 removed."
+    },
+    {
+      "id": "2021062800",
+      "title": "2021062800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021062800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-06-28T00:00:00.000Z",
+      "description": "Version 2021062800 includes 3 changes. URLs: 0 added and 4 removed. 7 other attributes changed."
+    },
+    {
+      "id": "2021052800",
+      "title": "2021052800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021052800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-05-28T00:00:00.000Z",
+      "description": "Version 2021052800 includes 3 changes. IPs: 2 added and 0 removed. URLs: 0 added and 5 removed."
+    },
+    {
+      "id": "2021051900",
+      "title": "2021051900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021051900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-05-19T00:00:00.000Z",
+      "description": "Version 2021051900 includes 3 changes. URLs: 4 added and 4 removed."
+    },
+    {
+      "id": "2021042900",
+      "title": "2021042900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021042900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-04-29T00:00:00.000Z",
+      "description": "Version 2021042900 includes 11 changes. IPs: 0 added and 106 removed. URLs: 6 added and 14 removed. 30 other attributes changed."
+    },
+    {
+      "id": "2021030100",
+      "title": "2021030100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021030100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-03-01T00:00:00.000Z",
+      "description": "Version 2021030100 includes 12 changes. URLs: 6 added and 15 removed. 25 other attributes changed."
+    },
+    {
+      "id": "2021012800",
+      "title": "2021012800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021012800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-01-28T00:00:00.000Z",
+      "description": "Version 2021012800 includes 1 changes. URLs: 1 added and 9 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2021010400",
+      "title": "2021010400 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2021010400?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2021-01-04T00:00:00.000Z",
+      "description": "Version 2021010400 includes 1 changes. URLs: 0 added and 2 removed. 6 other attributes changed."
+    },
+    {
+      "id": "2020102800",
+      "title": "2020102800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020102800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-10-28T00:00:00.000Z",
+      "description": "Version 2020102800 includes 3 changes. URLs: 4 added and 2 removed. 5 other attributes changed."
+    },
+    {
+      "id": "2020092900",
+      "title": "2020092900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020092900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-09-29T00:00:00.000Z",
+      "description": "Version 2020092900 includes 2 changes. URLs: 4 added and 1 removed. 6 other attributes changed."
+    },
+    {
+      "id": "2020090100",
+      "title": "2020090100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020090100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-09-01T00:00:00.000Z",
+      "description": "Version 2020090100 includes 2 changes. URLs: 0 added and 2 removed."
+    },
+    {
+      "id": "2020082800",
+      "title": "2020082800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020082800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-08-28T00:00:00.000Z",
+      "description": "Version 2020082800 includes 5 changes. URLs: 1 added and 4 removed."
+    },
+    {
+      "id": "2020080600",
+      "title": "2020080600 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020080600?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-08-06T00:00:00.000Z",
+      "description": "Version 2020080600 includes 0 changes."
+    },
+    {
+      "id": "2020070800",
+      "title": "2020070800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020070800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-07-08T00:00:00.000Z",
+      "description": "Version 2020070800 includes 3 changes. IPs: 16 added and 0 removed. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2020062900",
+      "title": "2020062900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020062900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-06-29T00:00:00.000Z",
+      "description": "Version 2020062900 includes 16 changes. URLs: 4 added and 60 removed. 28 other attributes changed."
+    },
+    {
+      "id": "2020061600",
+      "title": "2020061600 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020061600?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-06-16T00:00:00.000Z",
+      "description": "Version 2020061600 includes 0 changes."
+    },
+    {
+      "id": "2020052800",
+      "title": "2020052800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020052800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-05-28T00:00:00.000Z",
+      "description": "Version 2020052800 includes 2 changes. IPs: 2 added and 0 removed."
+    },
+    {
+      "id": "2020042800",
+      "title": "2020042800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020042800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-04-28T00:00:00.000Z",
+      "description": "Version 2020042800 includes 2 changes. URLs: 3 added and 2 removed. 8 other attributes changed."
+    },
+    {
+      "id": "2020041400",
+      "title": "2020041400 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020041400?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-04-14T00:00:00.000Z",
+      "description": "Version 2020041400 includes 2 changes. IPs: 8 added and 0 removed."
+    },
+    {
+      "id": "2020032700",
+      "title": "2020032700 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020032700?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-03-27T00:00:00.000Z",
+      "description": "Version 2020032700 includes 3 changes. IPs: 4 added and 30 removed."
+    },
+    {
+      "id": "2020032500",
+      "title": "2020032500 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020032500?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-03-25T00:00:00.000Z",
+      "description": "Version 2020032500 includes 0 changes."
+    },
+    {
+      "id": "2020022800",
+      "title": "2020022800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020022800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-02-28T00:00:00.000Z",
+      "description": "Version 2020022800 includes 3 changes. IPs: 20 added and 98 removed."
+    },
+    {
+      "id": "2020012800",
+      "title": "2020012800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020012800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-01-28T00:00:00.000Z",
+      "description": "Version 2020012800 includes 1 changes. URLs: 2 added and 0 removed. 5 other attributes changed."
+    },
+    {
+      "id": "2020010200",
+      "title": "2020010200 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2020010200?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2020-01-02T00:00:00.000Z",
+      "description": "Version 2020010200 includes 2 changes. URLs: 4 added and 5 removed. 5 other attributes changed."
+    },
+    {
+      "id": "2019112700",
+      "title": "2019112700 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019112700?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-11-27T00:00:00.000Z",
+      "description": "Version 2019112700 includes 3 changes. URLs: 1 added and 2 removed."
+    },
+    {
+      "id": "2019102800",
+      "title": "2019102800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019102800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-10-28T00:00:00.000Z",
+      "description": "Version 2019102800 includes 2 changes. URLs: 1 added and 1 removed. 5 other attributes changed."
+    },
+    {
+      "id": "2019093000",
+      "title": "2019093000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019093000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-09-30T00:00:00.000Z",
+      "description": "Version 2019093000 includes 4 changes. IPs: 13 added and 0 removed. URLs: 0 added and 7 removed."
+    },
+    {
+      "id": "2019082800",
+      "title": "2019082800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019082800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-08-28T00:00:00.000Z",
+      "description": "Version 2019082800 includes 2 changes. IPs: 12 added and 0 removed. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2019072900",
+      "title": "2019072900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019072900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-07-29T00:00:00.000Z",
+      "description": "Version 2019072900 includes 3 changes. IPs: 0 added and 3 removed. URLs: 1 added and 1 removed."
+    },
+    {
+      "id": "2019062800",
+      "title": "2019062800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019062800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-06-28T00:00:00.000Z",
+      "description": "Version 2019062800 includes 4 changes. URLs: 0 added and 9 removed."
+    },
+    {
+      "id": "2019052800",
+      "title": "2019052800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019052800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-05-28T00:00:00.000Z",
+      "description": "Version 2019052800 includes 2 changes. IPs: 0 added and 22 removed. URLs: 0 added and 1 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2019042900",
+      "title": "2019042900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019042900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-04-29T00:00:00.000Z",
+      "description": "Version 2019042900 includes 3 changes. URLs: 2 added and 4 removed."
+    },
+    {
+      "id": "2019032800",
+      "title": "2019032800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019032800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-03-28T00:00:00.000Z",
+      "description": "Version 2019032800 includes 2 changes. IPs: 0 added and 18 removed."
+    },
+    {
+      "id": "2019022800",
+      "title": "2019022800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019022800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-02-28T00:00:00.000Z",
+      "description": "Version 2019022800 includes 3 changes. IPs: 2 added and 0 removed. URLs: 1 added and 2 removed."
+    },
+    {
+      "id": "2019012800",
+      "title": "2019012800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019012800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-01-28T00:00:00.000Z",
+      "description": "Version 2019012800 includes 6 changes. IPs: 2 added and 197 removed. URLs: 5 added and 2 removed. 2 other attributes changed."
+    },
+    {
+      "id": "2019010700",
+      "title": "2019010700 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2019010700?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2019-01-07T00:00:00.000Z",
+      "description": "Version 2019010700 includes 3 changes. URLs: 6 added and 5 removed. 1 other attributes changed."
+    },
+    {
+      "id": "2018112800",
+      "title": "2018112800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018112800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-11-28T00:00:00.000Z",
+      "description": "Version 2018112800 includes 5 changes. URLs: 4 added and 8 removed. 12 other attributes changed."
+    },
+    {
+      "id": "2018102900",
+      "title": "2018102900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018102900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-10-29T00:00:00.000Z",
+      "description": "Version 2018102900 includes 16 changes. IPs: 0 added and 204 removed. URLs: 9 added and 24 removed. 22 other attributes changed."
+    },
+    {
+      "id": "2018100100",
+      "title": "2018100100 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018100100?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-10-01T00:00:00.000Z",
+      "description": "Version 2018100100 includes 25 changes. IPs: 0 added and 423 removed. URLs: 15 added and 41 removed. 46 other attributes changed."
+    },
+    {
+      "id": "2018083000",
+      "title": "2018083000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018083000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-08-30T00:00:00.000Z",
+      "description": "Version 2018083000 includes 1 changes. IPs: 161 added and 0 removed."
+    },
+    {
+      "id": "2018082900",
+      "title": "2018082900 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018082900?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-08-29T00:00:00.000Z",
+      "description": "Version 2018082900 includes 17 changes. IPs: 0 added and 368 removed. URLs: 3 added and 41 removed. 9 other attributes changed."
+    },
+    {
+      "id": "2018080200",
+      "title": "2018080200 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018080200?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-08-02T00:00:00.000Z",
+      "description": "Version 2018080200 includes 0 changes."
+    },
+    {
+      "id": "2018073000",
+      "title": "2018073000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018073000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-07-30T00:00:00.000Z",
+      "description": "Version 2018073000 includes 3 changes. IPs: 4 added and 2 removed. URLs: 3 added and 0 removed."
+    },
+    {
+      "id": "2018072800",
+      "title": "2018072800 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018072800?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-07-28T00:00:00.000Z",
+      "description": "Version 2018072800 includes 2 changes. IPs: 2 added and 0 removed. URLs: 0 added and 1 removed."
+    },
+    {
+      "id": "2018063000",
+      "title": "2018063000 - Worldwide - MEM",
+      "link": "https://endpoints.office.com/changes/Worldwide/2018063000?singleVersion=true&clientRequestId=ffa1b7d1-c7e3-4af6-bce7-4977af4d8863&serviceAreas=MEM",
+      "published": "2018-06-30T00:00:00.000Z",
+      "description": "Version 2018063000 includes 0 changes."
+    }
+  ]
+}
