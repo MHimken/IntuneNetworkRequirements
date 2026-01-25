@@ -3,7 +3,7 @@
 This list is used to map the custom IDs used in several '(artificial) service areas' to their respective services and the lists they are used in. This list does not include the standard IDs provided by Microsoft, only the custom ones created to cover gaps in the official lists or to separate services into more manageable parts.
 
 | ID | Service(s) | Used in List | Notes |
-|----|------------|--------------|-------|
+| ---- | ------------ | -------------- | ------- |
 | 999 | DNS Servers | [INR CustomList](INRCustomList.csv) | |
 | 9999 | Autopilot | [INR CustomList](INRCustomList.csv) | |
 | 9998 | TPM Attestation | [INR CustomList](INRCustomList.csv) | Used instead of wildcard - no TLS inspection allowed |
@@ -19,7 +19,7 @@ This list is used to map the custom IDs used in several '(artificial) service ar
 | 9988 | Endpoint Analytics | [INR CustomList](INRCustomList.csv) | These are the Endpoint Analytics service endpoints |
 | 9987 | Network Indicator Test | [INR CustomList](INRCustomList.csv) | These are the Network Indicator Test service endpoints |
 | 9986 | Authenticated Proxy not allowed | [INR CustomList](INRCustomList.csv) | These URLs cannot be accessed through an authenticated proxy |
-| 9985 | TLS inspection not allowed | [INR CustomList](INRCustomList.csv) | These URLs cannot be inspected by TLS |
+| 9985 | TLS inspection not allowed | [INR CustomList](INRCustomList.csv#L50) | These URLs cannot be inspected by TLS |
 | 9984 | Compatibility Database Updates | [INR CustomList](INRCustomList.csv) | These URLs are for compatibility database updates |
 | 9983 | Microsoft Telemetry | [INR CustomList](INRCustomList.csv) | These URLs are for Microsoft telemetry data collection required for endpoint analytics |
 | 9982 | Universal Print | [INR CustomList](INRCustomList.csv) | These URLs are for Universal Print service |

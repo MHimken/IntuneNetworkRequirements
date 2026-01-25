@@ -1,5 +1,13 @@
 # Changes
 
+## 2026
+
+### 25th of January
+
+- Fix: Win32 App and Script endpoints were swapped
+- Fix: Fixed minor formatting issue in [ID-to-Service-List.md](ID-to-Service-List.md)
+- Add: WIP [Consolidated-List-No-Wildcards.csv](Consolidated-List-No-Wildcards.csv) to enhance Microsofts consolidated list
+
 ## 2025
 
 ### 3rd of November
