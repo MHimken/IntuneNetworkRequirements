@@ -1,0 +1,298 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="INR With GUI" Height="860" Width="1280" MinHeight="760" MinWidth="1100" WindowStartupLocation="CenterScreen" Background="#F4FBFF">
+    <Window.Resources>
+        <SolidColorBrush x:Key="AsaListBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="AsaListBorderBrush" Color="#9FC7E9"/>
+        <SolidColorBrush x:Key="AsaListForegroundBrush" Color="#17324D"/>
+        <SolidColorBrush x:Key="AsaListItemBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="AsaListItemHoverBrush" Color="#EAF5FF"/>
+        <SolidColorBrush x:Key="AsaListItemSelectedBrush" Color="#CFE9FF"/>
+        <SolidColorBrush x:Key="AsaListItemSelectedInactiveBrush" Color="#DCEEFF"/>
+        <SolidColorBrush x:Key="AsaListItemSelectedForegroundBrush" Color="#0E3E69"/>
+
+        <Style x:Key="AsaListStyle" TargetType="ListBox">
+            <Setter Property="Background" Value="{DynamicResource AsaListBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource AsaListBorderBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AsaListForegroundBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="2"/>
+            <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        </Style>
+
+        <Style x:Key="AsaListItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Background" Value="{DynamicResource AsaListItemBackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource AsaListForegroundBrush}"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Margin" Value="0,1"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="ItemBorder"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AsaListItemHoverBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AsaListItemSelectedBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AsaListItemSelectedForegroundBrush}"/>
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True"/>
+                                    <Condition Property="Selector.IsSelectionActive" Value="False"/>
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{DynamicResource AsaListItemSelectedInactiveBrush}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource AsaListItemSelectedForegroundBrush}"/>
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#9FC7E9"/>
+            <Setter Property="Foreground" Value="#17324D"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                <Rectangle x:Name="Box" RadiusX="3" RadiusY="3"
+                                           Fill="{TemplateBinding Background}"
+                                           Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"/>
+                                <Path x:Name="CheckMark" Margin="3" Stretch="Uniform"
+                                      Data="M 0,5 L 4,9 L 11,0"
+                                      Stroke="{TemplateBinding Foreground}" StrokeThickness="2"
+                                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                                      Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="RadioButton">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#9FC7E9"/>
+            <Setter Property="Foreground" Value="#17324D"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                <Ellipse x:Name="Outer"
+                                         Fill="{TemplateBinding Background}"
+                                         Stroke="{TemplateBinding BorderBrush}" StrokeThickness="1"/>
+                                <Ellipse x:Name="Dot" Margin="4"
+                                         Fill="{TemplateBinding Foreground}" Visibility="Collapsed"/>
+                            </Grid>
+                            <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DarkModeIconButtonStyle" TargetType="Button">
+            <Setter Property="Width" Value="46"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Background" Value="#EAF5FF"/>
+            <Setter Property="BorderBrush" Value="#9FC7E9"/>
+            <Setter Property="Foreground" Value="#17324D"/>
+            <Setter Property="FontFamily" Value="Segoe UI Symbol"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTip" Value="Toggle dark mode"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Border x:Name="HeaderBorder" Background="#0F6CBD" CornerRadius="10" Padding="14" Grid.Row="0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Grid.Column="0">
+                    <TextBlock Text="INR With GUI" FontSize="26" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="  |  Intune Network Requirements Wrapper" FontSize="16" Margin="14,6,0,0" Foreground="#D6ECFF"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <Button x:Name="RunAsAdminButton" Width="210" Height="34" Margin="0,0,10,0" Content="Re-run as Administrator" HorizontalAlignment="Right" VerticalAlignment="Center" FontWeight="SemiBold" Visibility="Collapsed" ToolTip="Relaunch this GUI with administrator rights for full network test coverage."/>
+                    <Button x:Name="DarkModeCheck" Style="{StaticResource DarkModeIconButtonStyle}" Content="&#x2600;" ToolTip="Switch to dark mode"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TabControl x:Name="MainTabControl" Grid.Row="1" Margin="0,10,0,10">
+            <TabItem Header="Run A Scan">
+                <Grid Margin="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="420"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="0,0,10,0">
+                            <Border x:Name="RunScanPanel" Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10">
+                                <StackPanel>
+                                    <TextBlock Text="Run A Scan" FontSize="18" FontWeight="SemiBold"/>
+                                    <CheckBox x:Name="UseCustomCsvCheck" Margin="0,8,0,0" Content="Use Custom CSV" ToolTip="Enable to load one custom CSV with URL, Port, Protocol, ID."/>
+                                    <TextBox x:Name="CustomCsvPathText" Margin="0,6,0,0" IsEnabled="False" ToolTip="Path to one CSV file."/>
+                                    <Button x:Name="BrowseCustomCsvButton" Margin="0,6,0,0" Content="Browse CSV" Width="120" HorizontalAlignment="Left" IsEnabled="False" ToolTip="Select a CSV file. Only one file can be selected."/>
+
+                                    <WrapPanel Margin="0,10,0,0">
+                                        <CheckBox x:Name="UseMSJsonCheck" Content="UseMSJSON" Margin="0,0,14,0" ToolTip="Use MEM endpoints JSON source."/>
+                                        <CheckBox x:Name="UseMS365JsonCheck" Content="UseMS365JSON" Margin="0,0,14,0" ToolTip="Use M365 endpoints JSON source."/>
+                                        <CheckBox x:Name="AllowBestEffortCheck" Content="AllowBestEffort" IsChecked="True" Margin="0,0,14,0" ToolTip="Try wildcard resolution for best effort matching."/>
+                                        <CheckBox x:Name="CheckCertRevocationCheck" Content="CheckCertRevocation" IsChecked="True" ToolTip="Check certificate revocation where CRL IDs are available."/>
+                                    </WrapPanel>
+
+                                    <TextBlock Text="Artificial Service Areas (ASAs)" Margin="0,12,0,4" FontWeight="SemiBold"/>
+                                    <ListBox x:Name="AsaList" Height="260" SelectionMode="Extended" Style="{StaticResource AsaListStyle}" ItemContainerStyle="{StaticResource AsaListItemStyle}" ToolTip="Select one or more ASAs. Overlap warnings will appear if needed."/>
+                                    <TextBlock x:Name="OverlapWarningText" Margin="0,8,0,0" Foreground="#B00020" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Grid Grid.Column="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10" Grid.Row="0">
+                            <WrapPanel>
+                                <CheckBox x:Name="DetailedOutputCheck" Content="Detailed Output" IsChecked="True" Margin="0,0,16,0" ToolTip="Detailed output shows all status lines."/>
+                                <CheckBox x:Name="EnableLogFileCheck" Content="Create Log File" IsChecked="True" Margin="0,0,16,0" ToolTip="Checked by default. Uncheck to use NoOutput mode."/>
+                                <CheckBox x:Name="OpenCsvWithDefaultProgramCheck" Content="Open result CSV with the default program instead of Excel" IsChecked="False" Margin="0,0,16,0" ToolTip="When enabled, result CSV files are opened with the default .csv app instead of Excel."/>
+                                <TextBlock Text="TenantName" Margin="0,2,6,0"/>
+                                <TextBox x:Name="TenantNameText" Width="170" Margin="0,0,12,0" ToolTip="Required for specific M365 URL expansion."/>
+                                <TextBlock Text="MaxDelayInMS" Margin="0,2,6,0"/>
+                                <TextBox x:Name="MaxDelayText" Width="70" Text="300" Margin="0,0,12,0"/>
+                                <CheckBox x:Name="BurstModeCheck" Content="BurstMode" Margin="0,0,12,0"/>
+                                <Button x:Name="ResetWindowSizeButton" Content="Reset Window Size" Margin="0,0,12,0" Padding="10,4" ToolTip="Reset the window size to the default resolution for this GUI."/>
+                            </WrapPanel>
+                        </Border>
+
+                        <Border Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10" Grid.Row="1">
+                            <StackPanel>
+                                <TextBlock Text="Simple Output Progress" FontWeight="SemiBold"/>
+                                <Border x:Name="RainbowProgressHost" Height="24" Margin="0,8,0,0" CornerRadius="6" BorderBrush="#9FC7E9" BorderThickness="1" Background="#EAF5FF">
+                                    <Grid>
+                                        <Rectangle x:Name="RainbowProgressFill" RadiusX="6" RadiusY="6">
+                                            <Rectangle.Fill>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Color="#FF0000" Offset="0"/>
+                                                    <GradientStop Color="#FF7F00" Offset="0.1667"/>
+                                                    <GradientStop Color="#FFFF02" Offset="0.3333"/>
+                                                    <GradientStop Color="#00FF02" Offset="0.5"/>
+                                                    <GradientStop Color="#0000E2" Offset="0.6667"/>
+                                                    <GradientStop Color="#4B0082" Offset="0.8333"/>
+                                                    <GradientStop Color="#9900FF" Offset="1"/>
+                                                </LinearGradientBrush>
+                                            </Rectangle.Fill>
+                                        </Rectangle>
+                                        <Rectangle x:Name="RainbowProgressMask" HorizontalAlignment="Right" Width="0" RadiusX="6" RadiusY="6" Fill="DimGray"/>
+                                    </Grid>
+                                </Border>
+                                <TextBlock x:Name="ProgressText" Margin="0,8,0,0" Text="Progress: 0/0 | ETA: --:--:--"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="White" CornerRadius="8" Padding="12" Grid.Row="2">
+                            <DockPanel>
+                                <TextBlock Text="Status" FontWeight="SemiBold" DockPanel.Dock="Top" Margin="0,0,0,8"/>
+                                <Grid>
+                                    <TextBox x:Name="StatusText" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap" IsReadOnly="True" Visibility="Collapsed"/>
+                                    <ListBox x:Name="SimpleResultsList" ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Visibility="Visible"/>
+                                </Grid>
+                            </DockPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="Compare Runs">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid Margin="8">
+                        <Border x:Name="ComparePanel" Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,10" MaxWidth="760" HorizontalAlignment="Left">
+                            <StackPanel>
+                                <TextBlock Text="Compare Runs (Visual)" FontSize="18" FontWeight="SemiBold"/>
+                                <TextBlock Text="Build an interactive vis.js report comparing two scan result CSVs. Pick which columns to compare inside the report." FontSize="11" Foreground="#5A6E82" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                <TextBox x:Name="CompareCsvAText" Margin="0,8,0,0" ToolTip="First ResultList CSV (left / run A)."/>
+                                <Button x:Name="BrowseCompareAButton" Margin="0,6,0,0" Width="150" Content="Browse Run A CSV" HorizontalAlignment="Left" ToolTip="Select the first ResultList CSV."/>
+                                <TextBox x:Name="CompareCsvBText" Margin="0,8,0,0" ToolTip="Second ResultList CSV (right / run B)."/>
+                                <Button x:Name="BrowseCompareBButton" Margin="0,6,0,0" Width="150" Content="Browse Run B CSV" HorizontalAlignment="Left" ToolTip="Select the second ResultList CSV."/>
+                                <TextBlock Text="vis.js library" Margin="0,12,0,4" FontWeight="SemiBold"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <RadioButton x:Name="CompareOfflineRadio" GroupName="CompareAsset" Content="Offline (bundled)" IsChecked="True" Margin="0,0,14,0" ToolTip="Inline the bundled vis-network library so the report works with no internet."/>
+                                    <RadioButton x:Name="CompareOnlineRadio" GroupName="CompareAsset" Content="Online (CDN)" ToolTip="Reference vis-network from a CDN. The report needs internet to render."/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="10">
+            <DockPanel LastChildFill="True">
+                <StackPanel x:Name="ScanActionButtons" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button x:Name="StartButton" Width="120" Height="34" Margin="0,0,10,0" Content="Start Scan" ToolTip="Start execution."/>
+                    <Button x:Name="StopButton" Width="120" Height="34" Margin="0,0,10,0" Content="Stop Scan" ToolTip="Stop current execution."/>
+                    <Button x:Name="GenerateReportsButton" Width="170" Height="34" Content="Generate Scan Report" ToolTip="Generate the scan report from the latest CSV output." ToolTipService.ShowOnDisabled="True"/>
+                    <Button x:Name="OpenCsvButton" Width="170" Height="34" Margin="10,0,0,0" Content="Open CSV in Excel" ToolTip="Open the latest scan result CSV in Excel (falls back to default app)." ToolTipService.ShowOnDisabled="True"/>
+                </StackPanel>
+                <StackPanel x:Name="CompareActionButtons" Orientation="Horizontal" HorizontalAlignment="Right" Visibility="Collapsed">
+                    <Button x:Name="GenerateComparisonButton" Width="210" Height="34" Content="Generate Visual Comparison" FontWeight="SemiBold" ToolTip="Create and open the interactive comparison report."/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -6,7 +6,7 @@
 
 - Fix: Win32 App and Script endpoints were swapped
 - Fix: Fixed minor formatting issue in [ID-to-Service-List.md](ID-to-Service-List.md)
-- Add: WIP [Consolidated-List-No-Wildcards.csv](Consolidated-List-No-Wildcards.csv) to enhance Microsofts consolidated list
+- Add: WIP [Consolidated-List-No-Wildcards.csv](Data/Consolidated-List-No-Wildcards.csv) to enhance Microsofts consolidated list
 
 ## 2025
 
@@ -22,7 +22,7 @@
 
 ### 09th of October
 
-- Add: [MCC](MCC.csv) endpoints for standalone MCC installations.
+- Add: [MCC](Data/MCC.csv) endpoints for standalone MCC installations.
 - Update: Delivery Optimization endpoints
 
 ### 29th of August

@@ -1,0 +1,20 @@
+# INR - generated runtime artifacts.
+# Ignore the contents of the output folders so scan results, reports, logs,
+# and merge output are not committed. (Files already tracked stay tracked
+# until removed with `git rm --cached`.)
+/Logs/
+/Output/
+/Reports/
+/MergedResults/
+/Tests/
+/TestResults/
+
+# Corrupt-settings backups created by Import-INRSettings.
+Settings.json.corrupt_*
+
+# Local runtime settings file.
+Settings.json
+
+# Auto-appended development log; not authoritative.
+/context.md
+/context.json

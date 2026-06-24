@@ -1,0 +1,9 @@
+#!/bin/sh
+# Shared pre-commit hook (enabled via: git config core.hooksPath hooks).
+#
+# Thin wrapper: delegates to the PowerShell sanitizer, which blanks the
+# PII-bearing CompareCsvA / CompareCsvB path fields in Settings.json if that
+# file is ever staged. Settings.json is normally gitignored; this is
+# defense-in-depth. See hooks/Sanitize-Settings.ps1 for details.
+root=$(git rev-parse --show-toplevel)
+exec pwsh -NoProfile -File "$root/hooks/Sanitize-Settings.ps1"

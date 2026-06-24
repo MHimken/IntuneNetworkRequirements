@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, visualization]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: PSScriptAnalyzer + Pester
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Cache PowerShell modules
+        id: psmodules
+        uses: actions/cache@v5
+        with:
+          path: ~\Documents\PowerShell\Modules
+          key: ${{ runner.os }}-psmodules-pester5.5.0-psscriptanalyzer
+
+      - name: Install PowerShell modules
+        if: steps.psmodules.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+      - name: Static analysis (PSScriptAnalyzer)
+        shell: pwsh
+        run: ./Tests/Invoke-INRAnalyzer.ps1 -CI
+
+      - name: Unit tests (Pester)
+        shell: pwsh
+        run: ./Tests/Invoke-INRTests.ps1 -CI

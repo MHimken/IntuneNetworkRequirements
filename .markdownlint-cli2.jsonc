@@ -1,0 +1,13 @@
+{
+  // Lenient markdownlint config tuned for this repo.
+  // - context.md is an auto-appended dev log, not authored prose.
+  // - Assets/ holds vendored third-party files (e.g. vis-network LICENSE).
+  "config": {
+    "default": true,
+    "MD013": false, // line length: docs use long lines / code blocks
+    "MD033": false, // inline HTML is allowed
+    "MD041": false  // first line need not be a top-level heading
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["context.md", "Assets/**", "node_modules/**"]
+}

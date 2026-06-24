@@ -115,10 +115,6 @@ This must be specified if you want some of the M365 URLS to be populated automat
 Default: 300ms. This is my recommended value because some addresses tend to respond slowly.
 .PARAMETER BurstMode
 Will use the MaxDelayInMs, divide it into 50ms chunks and then do a quick test. Use this to find out response times.
-.PARAMETER BrienMode
-This mode allows you to run the script multiple times in succession and automatically merge the results. This can be used to 
-change network settings in between running the script with the same parameters. The last two results will be compared. Recommended
-value: 2
 .PARAMETER MergeResults
 Will trigger the result merge path. If two CSV files are in the working directory, it will merge those. Otherwise use -MergeCSVs.
 .PARAMETER MergeShowAllResults
@@ -140,12 +136,6 @@ Specifies the working directory where the script will be executed. The default v
 .PARAMETER LogDirectory
 Specifies the directory where log files will be stored. The default value is "C:\INR\".
 .EXAMPLE
-This example will use the MS-JSON for MEM, ingest the custom CSV if it exists in the same folder, allow wildcard 
-handling in URLS, check the CRLs of each certificate provided for the ASA TPM Attestation. The script will run twice, 
-asking you to change the network environment in between (e.g. from home to VPN), and then display all the results 
-of each pass and the merged results of the last two results.
-.\Get-IntuneNetworkRequirements.ps1 -UseMSJSON -AllowBestEffort -CheckCertRevocation -ShowResults -TPMAttestation -BrienMode 2
-.EXAMPLE
 This example will use the MS-JSON for MEM, my custom CSV, allow for wildcard handling in URLS, check 
 the CRLs of each certificate provided for the ASA TPMAttestation and then display the results in a grid, 
 while displaying potential issues in the console for the service area TPMAttestation. 
@@ -155,10 +145,10 @@ This will ingest 2 files from the working directory and compare them. The compar
 .\Get-IntuneNetworkRequirements.ps1 -MergeResults -MergeCSVs ResultList_29072024_110030_SADAME-PC.csv,ResultList_30072024_084101_3T0M4W3.csv -ShowResults
 .EXAMPLE
 This will test all Visual Studio endpoints and verify each CRL. It will output the results in a CSV file and show the results in a gridview.
-.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\VisualStudio.csv -UseMSJSON -CheckCertRevocation -VisualStudioFull -OutputCSV -ShowResults
+.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\Data\VisualStudio.csv -UseMSJSON -CheckCertRevocation -VisualStudioFull -OutputCSV -ShowResults
 .EXAMPLE
 This will test all Defender endpoints and verify each CRL. It will output the results in a CSV file and show the results in a gridview.
-.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\MicrosoftDefender.csv -UseMSJSON -CheckCertRevocation -DefenderFull -OutputCSV -ShowResults
+.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\Data\MicrosoftDefender.csv -UseMSJSON -CheckCertRevocation -DefenderFull -OutputCSV -ShowResults
 .NOTES
     Version: 1.4.0
     Versionname: Community-Is-Key
@@ -341,10 +331,6 @@ param(
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
     [switch]$BurstMode, # Divide the delay by 50 and try different speeds. Give warning when more than 10 URLs are tested
-    [Parameter(ParameterSetName = 'TestMSJSON')]
-    [Parameter(ParameterSetName = 'TestMS365JSON')]
-    [Parameter(ParameterSetName = 'TestCustom')]
-    [int]$BrienMode,
 
     #Merge options
     [Parameter(ParameterSetName = 'Merge', Position = 0)]
@@ -380,9 +366,16 @@ param(
     [System.IO.DirectoryInfo]$LogDirectory
 )
 
+# Version 1.0 (not Latest): this script relies on PowerShell member enumeration
+# over heterogeneous collections (mixed DNS record types, optional JSON fields).
+# Latest treats a missing property on any element as a terminating-style error,
+# which breaks DNS resolution and endpoint parsing. 1.0 still enforces the
+# valuable uninitialized-variable checks without that property strictness.
+Set-StrictMode -Version 1.0
+
 #Preparation
 if ($CheckCertRevocation -and -not($UseMSJSON -or $UseMS365JSON -or (Get-Content $CustomURLFile | Where-Object { $_ -match '9993' }))) {
-    Write-Output "If you want to check certificate revocation, please specify at least one source of URLs (-UseMSJSON, -UseMS365JSON or -CustomURLFile). Exiting script." -ForegroundColor Red
+    Write-Warning 'If you want to check certificate revocation, please specify at least one source of URLs (-UseMSJSON, -UseMS365JSON or -CustomURLFile). Exiting script.'
     exit 1
 }
 function Get-ScriptPath {
@@ -390,21 +383,17 @@ function Get-ScriptPath {
     .SYNOPSIS
     Get the current script path.
     #>
-    if ($PSScriptRoot) { 
+    if ($PSScriptRoot) {
         # Console or VS Code debug/run button/F5 temp console
-        $ScriptRoot = $PSScriptRoot 
+        $ScriptRoot = $PSScriptRoot
+    } elseif (Get-Variable -Name 'psISE' -ErrorAction SilentlyContinue) {
+        $ScriptRoot = Split-Path -Path $psISE.CurrentFile.FullPath
+    } elseif ((Get-Variable -Name 'psEditor' -ErrorAction SilentlyContinue) -and $profile -match 'VScode') {
+        # VS Code "Run Code Selection" button/F8 in integrated console
+        $ScriptRoot = Split-Path $psEditor.GetEditorContext().CurrentFile.Path
     } else {
-        if ($psISE) { 
-            Split-Path -Path $psISE.CurrentFile.FullPath
-        } else {
-            if ($profile -match 'VScode') { 
-                # VS Code "Run Code Selection" button/F8 in integrated console
-                $ScriptRoot = Split-Path $psEditor.GetEditorContext().CurrentFile.Path 
-            } else { 
-                Write-Output 'unknown directory to set path variable. exiting script.'
-                exit
-            } 
-        } 
+        Write-Warning 'Unable to determine the script directory. Exiting script.'
+        exit
     }
     $Script:PathToScript = $ScriptRoot
 }
@@ -416,26 +405,26 @@ function Initialize-Script {
     #Prepare environment
     Get-ScriptPath
     $Script:DateTime = Get-Date -Format yyyyMMdd_HHmmss
-    if (-not($Script:CurrentLocation)) {
+    if (-not (Get-Variable -Name 'CurrentLocation' -Scope Script -ValueOnly -ErrorAction SilentlyContinue)) {
         $Script:CurrentLocation = Get-Location
     }
-    if (-not($WorkingDirectory)) {
-        $WorkingDirectory = $Script:PathToScript
+    if (-not($Script:WorkingDirectory)) {
+        $Script:WorkingDirectory = $Script:PathToScript
     } else {
-        if (-not(Test-Path $WorkingDirectory )) { New-Item $WorkingDirectory -ItemType Directory -Force | Out-Null }
+        if (-not(Test-Path $Script:WorkingDirectory )) { New-Item $Script:WorkingDirectory -ItemType Directory -Force | Out-Null }
     }
-    if ((Get-Location).path -ne $WorkingDirectory) {
-        Set-Location $WorkingDirectory
+    if ((Get-Location).path -ne $Script:WorkingDirectory) {
+        Set-Location $Script:WorkingDirectory
     }
     if (-not($LogDirectory)) {
-        $LogDirectory = Join-Path -Path $WorkingDirectory -ChildPath "Logs"
+        $LogDirectory = Join-Path -Path $Script:WorkingDirectory -ChildPath "Logs"
     }
     if (-not(Test-Path $LogDirectory )) { New-Item $LogDirectory -ItemType Directory -Force | Out-Null }
     if ($OutputCSV) {
-        $Script:OutpathFilePath = $(Join-Path $WorkingDirectory -ChildPath "TestResults")
+        $Script:OutpathFilePath = $(Join-Path $Script:WorkingDirectory -ChildPath "TestResults")
         if (-not(Test-Path $Script:OutpathFilePath)) { New-Item $Script:OutpathFilePath -ItemType Directory -Force | Out-Null }
     }
-    if (-not($Script:LogFile)) {
+    if (-not (Get-Variable -Name 'LogFile' -Scope Script -ValueOnly -ErrorAction SilentlyContinue)) {
         $LogPrefix = 'INR'
         $Script:LogFile = Join-Path -Path $LogDirectory -ChildPath ('{0}_{1}.log' -f $LogPrefix, $Script:DateTime)
         if (-not(Test-Path $LogDirectory)) { New-Item $LogDirectory -ItemType Directory -Force | Out-Null }
@@ -453,11 +442,26 @@ function Initialize-Script {
     $Script:URLsToVerify = [System.Collections.ArrayList]::new()
     $Script:DNSCache = [System.Collections.ArrayList]::new()
     $Script:TCPCache = [System.Collections.ArrayList]::new()
-    if ($Script:FinalResultList) {
-        Get-Variable FinalResultList | Clear-Variable 
-    }
+    $Script:ManualURLs = [System.Collections.ArrayList]::new()
     $Script:FinalResultList = [System.Collections.ArrayList]::new()
-    $Script:ExternalIP = (ConvertFrom-Json (Invoke-WebRequest "https://geo-prod.do.dsp.mp.microsoft.com/geo")).ExternalIpAddress
+
+    #Load the shared service-area catalog (single source of truth for ASA tests)
+    $CatalogPath = Join-Path -Path $Script:PathToScript -ChildPath 'Data/ServiceAreas.psd1'
+    if (-not (Test-Path -LiteralPath $CatalogPath)) {
+        Write-Log -Message "Service-area catalog not found at $CatalogPath" -Component 'InitializeScript' -Type 3
+        exit 6
+    }
+    $Script:ServiceAreaCatalog = @((Import-PowerShellDataFile -LiteralPath $CatalogPath).ServiceAreas)
+    $Script:ServiceAreaByName = @{}
+    foreach ($Area in $Script:ServiceAreaCatalog) { $Script:ServiceAreaByName[$Area.Name] = $Area }
+
+    #Best-effort external IP lookup; failure here must not abort the whole run
+    try {
+        $Script:ExternalIP = (ConvertFrom-Json (Invoke-WebRequest -Uri 'https://geo-prod.do.dsp.mp.microsoft.com/geo' -TimeoutSec 10 -UseBasicParsing)).ExternalIpAddress
+    } catch {
+        $Script:ExternalIP = 'Unavailable'
+        Write-Log -Message "Could not determine external IP: $($_.Exception.Message)" -Component 'InitializeScript' -Type 2
+    }
     Write-Log -Message "External IP: $($Script:ExternalIP)" -Component 'InitializeScript'
     #Initialize custom Script variables
     Import-CustomURLFile
@@ -561,26 +565,25 @@ function Write-SettingsToLog {
         Additional Settings
         TenantName: $TenantName
         MaxDelayInMS: $MaxDelayInMS
-        BurstMode: $BurstMode" -Component 'InitialzeScript'
+        BurstMode: $BurstMode" -Component 'InitializeScript'
     } else {
         Write-Log "Settings used to run the script:
         Merge options
         MergeResults: $MergeResults
         MergeShowAllResults: $MergeShowAllResults
-        MergeCSVs: $MergeCSVs" -Component 'InitialzeScript'
+        MergeCSVs: $MergeCSVs" -Component 'InitializeScript'
     }
     Write-Log "Output options
         OutputCSV: $OutputCSV
         ShowResults: $ShowResults
     
         Common parameters
-        NoLog: $NoLog
+        NoOutput: $NoOutput
         ToConsole: $ToConsole
         WorkingDirectory: $WorkingDirectory
         LogDirectory: $LogDirectory
-        BrienMode: $BrienMode
         ScriptPath: $($Script:PathToScript)
-        LogFile: $($Script:LogFile)" -Component 'InitialzeScript'
+        LogFile: $($Script:LogFile)" -Component 'InitializeScript'
 }
 function Import-CustomURLFile {
     <#
@@ -657,6 +660,7 @@ function Get-URLsFromID {
         }
         $DuplicateURLsToVerify | ForEach-Object { $Script:URLsToVerify.Remove($_) }    
     }
+        Write-Log -Message "URLsToVerify count: $($Script:URLsToVerify.Count)" -Component 'GetURLsFromID'
     return $true
 }
 
@@ -707,6 +711,7 @@ function Get-M365Service {
         [switch]$MEM
     )
     $EndpointURL = "https://endpoints.office.com"
+    $URLs = @()
     #if (Test-HTTP -URL $EndpointURL) {
     if ($M365) {
         Write-Log 'Adding Microsoft URLs to the pool from service area M365' -Component 'GetM365URLs'
@@ -718,21 +723,31 @@ function Get-M365Service {
         $URLs = Invoke-RestMethod -Uri ("$EndpointURL/endpoints/WorldWide?ServiceAreas=MEM`&`clientrequestid=$($Script:GUID)")
     }
     foreach ($Object in $URLs) {
-        $Ports = [array](($(if ($Object.tcpPorts) { $Object.tcpPorts }elseif ($Object.udpPorts) { $Object.udpPorts }else { '443' })).split(",").trim())
-        $Protocol = $(if ($Object.tcpPorts) { 'TCP' } elseif ($Object.udpPorts) { 'UDP' } else { 'TCP' })
-        foreach ($URL in $Object.urls) {
+        # Endpoint objects do not all carry tcpPorts/udpPorts/urls, so probe for
+        # each property to stay safe under Set-StrictMode.
+        $TcpPortsProp = $Object.PSObject.Properties['tcpPorts']
+        $UdpPortsProp = $Object.PSObject.Properties['udpPorts']
+        $UrlsProp = $Object.PSObject.Properties['urls']
+        $RequiredProp = $Object.PSObject.Properties['required']
+        if ($TcpPortsProp -and $TcpPortsProp.Value) {
+            $Ports = [array]([string]$TcpPortsProp.Value).split(",").trim()
+            $Protocol = 'TCP'
+        } elseif ($UdpPortsProp -and $UdpPortsProp.Value) {
+            $Ports = [array]([string]$UdpPortsProp.Value).split(",").trim()
+            $Protocol = 'UDP'
+        } else {
+            $Ports = @('443')
+            $Protocol = 'TCP'
+        }
+        if (-not $UrlsProp) { continue }
+        foreach ($URL in $UrlsProp.Value) {
             foreach ($Port in $Ports) {
                 $URLObject = [PSCustomObject]@{
                     id       = $Object.id
-                    #serviceArea            = $Object.serviceArea
-                    #serviceAreaDisplayName = $Object.serviceAreaDisplayName
                     url      = $URL
                     Port     = $Port
                     Protocol = $Protocol
-                    #expressRoute           = $Object.expressroute
-                    #category               = $Object.category
-                    required = $Object.required
-                    #notes                  = $Object.notes
+                    required = if ($RequiredProp) { $RequiredProp.Value } else { $null }
                 }
                 if ($URL -match '\*') {
                     Write-Log -Message "The URI $URL contains a wildcard - trying to find nearest match later" -Component 'GetM365Service'
@@ -789,6 +804,11 @@ function Test-SSL {
         $SSLTarget, 
         $SSLPort = 443
     )
+    $SSLTest = $null
+    $AuthException = $null
+    $CertInfo = $null
+    $KnownCRL = $false
+    $SSLInspectionResult = $false
     $TCPSocket = New-Object Net.Sockets.TcpClient($SSLTarget, $SSLPort)
     $SSLStream = New-Object -TypeName Net.Security.SslStream($TCPSocket.GetStream(), $false)
     try {
@@ -822,6 +842,11 @@ function Test-SSL {
             $AIAURIArray = $CertInfo.Extensions |  Where-Object -FilterScript { $_.Oid.Value -eq '1.3.6.1.5.5.7.1.1' } | ForEach-Object -Process { $_.Oid.FriendlyName; $_.Format($true) }
             $SSLInspectionResult = $false
             $KnownCRL = $false
+            # Force arrays and pre-extract the formatted entry (index 1) so a
+            # cert with a single-element extension list can't trip StrictMode
+            # array-bounds checks.
+            $CRLURIText = if (@($CRLURIarray).Count -ge 2) { @($CRLURIarray)[1] } else { $null }
+            $AIAURIText = if (@($AIAURIArray).Count -ge 2) { @($AIAURIArray)[1] } else { $null }
             if (-not($CRLURIarray) -and -not($AIAURIArray)) {
                 Write-Log "No CRL detected - SSL inspection is likely. Testing if tested URL $SSLTarget is a known address CRL itself" -Component 'TestSSL' -Type 2
                 $VerifyAgainstKnownGoodResult = Test-SSLInspectionByKnownCRLs -VerifyAgainstKnownGood $SSLTarget
@@ -833,31 +858,31 @@ function Test-SSL {
                     Write-Log "SSL Inspection very likely. $SSLTarget is not a known CRL address" -Component 'TestSSL' -Type 2
                     $SSLInspectionResult = $true
                 }
-            } elseif ($CRLURIarray -and ($CRLURIarray[1].split('[').count -ge 2)) {
-                if ($CRLURIarray[1].split('[').count -eq 2) {
-                    $CRLURI = $CRLURIarray[1].Split('http://')[1].split('/')[0]
+            } elseif ($CRLURIText -and ($CRLURIText.split('[').count -ge 2)) {
+                if ($CRLURIText.split('[').count -eq 2) {
+                    $CRLURI = $CRLURIText.Split('http://')[1].split('/')[0]
                     Write-Log "Testing CRL URI: $CRLURI" -Component 'TestSSL'
                     $KnownCRL = Test-SSLInspectionByKnownCRLs -CRLURL $CRLURI
-                } elseif ($CRLURIarray[1].split('[').count -gt 2) {
+                } elseif ($CRLURIText.split('[').count -gt 2) {
                     Write-Log 'Multiple CRL URIs found - testing all' -Component 'TestSSL'
-                    $TestMultipleCRLs = $CRLURIarray[1].split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing CRL URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
+                    $TestMultipleCRLs = $CRLURIText.split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing CRL URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
                     if ($TestMultipleCRLs) { $KnownCRL = $true }
                 }
-            } elseif ($AIAURIArray -and ($AIAURIArray[1].split('[').count -ge 2)) {
+            } elseif ($AIAURIText -and ($AIAURIText.split('[').count -ge 2)) {
                 Write-Log 'No CRL found in certificate - testing AIA URI' -Component 'TestSSL' -Type 2
-                if ( $AIAURIArray[1].split('[').count -eq 2) {
+                if ($AIAURIText.split('[').count -eq 2) {
+                    $AIAURI = $AIAURIText.Split('http://')[1].split('/')[0]
                     Write-Log "Testing AIA URI: $AIAURI" -Component 'TestSSL'
-                    $AIAURI = $AIAURIArray[1].Split('http://')[1].split('/')[0]
                     $KnownCRL = Test-SSLInspectionByKnownCRLs -CRLURL $AIAURI
-                } elseif ($AIAURIArray[1].split('[').count -gt 2) {
-                    $TestMultipleAIA = $AIAURIArray[1].split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing AIA URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
+                } elseif ($AIAURIText.split('[').count -gt 2) {
+                    $TestMultipleAIA = $AIAURIText.split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing AIA URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
                     if ($TestMultipleAIA) { $KnownCRL = $true }
                 }
-                if ( -not($KnownCRL)) {
+                if (-not($KnownCRL)) {
                     Write-Log "Unknown CRL or AIA. $SSLTarget's certificate didn't provide any known CRL/AIA address" -Component 'TestSSL' -Type 2
                     $SSLInspectionResult = $true
                 }
-                
+
             }
         }
     }
@@ -924,14 +949,12 @@ function Test-DNS {
         return $CachedResult.result
     }
     $ResolvedDNSRecords = Resolve-DnsName -Name $DNSTarget -ErrorAction SilentlyContinue
-    if ($ResolvedDNSRecords.count) {
+    if ($ResolvedDNSRecords) {
         foreach ($DNSARecord in $ResolvedDNSRecords.IP4Address) {
-            if ($DNSARecord.IP4Address) {
-                if ($DNSARecord -eq '0.0.0.0' -or $DNSARecord -eq '127.0.0.1') {
-                    Write-Log -Message "DNS sinkhole detected: Address $DNSTarget resolved to an invalid address" -Component 'TestDNS' -Type 2
-                    $DNSresult = $false
-                    break
-                }
+            if ($DNSARecord -eq '0.0.0.0' -or $DNSARecord -eq '127.0.0.1') {
+                Write-Log -Message "DNS sinkhole detected: Address $DNSTarget resolved to an invalid address" -Component 'TestDNS' -Type 2
+                $DNSresult = $false
+                break
             }
         }
         foreach ($DNSAAAARecord in $ResolvedDNSRecords.IP6Address) {
@@ -972,11 +995,9 @@ function Test-TCPPort {
         }
     }
     if (-not($BurstMode)) {
-        if ($TCPTarget -in $Script:TCPCache.CachedURL -and $TCPPort -in ($Script:TCPCache.Port | Where-Object { $_.CachedURL -eq $TCPTarget })) {
-            $TCPCachedResult = $Script:TCPCache | Where-Object { $_.CachedURL -eq $TCPTarget } | Select-Object -Property result -First 1
-            if (-not($TCPCachedResult.result)) {
-                return $false
-            }
+        $TCPCachedResult = $Script:TCPCache | Where-Object { $_.CachedURL -eq $TCPTarget -and $_.Port -eq $TCPPort } | Select-Object -First 1
+        if ($TCPCachedResult -and -not($TCPCachedResult.Result)) {
+            return $false
         }
     }
     $TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
@@ -1001,7 +1022,7 @@ function Test-TCPPort {
         $TCPObject = [PSCustomObject]@{
             CachedURL = $TCPTarget
             Port      = $TCPPort
-            Result    = $result
+            Result    = $success
         }
         $Script:TCPCache.add($TCPObject) | Out-Null
     }
@@ -1021,6 +1042,7 @@ function Test-NTPviaUDP {
         [int]$Port
     )
     Write-Log "Test $Target via direct UDP request" -Component 'TestNTPviaUDP'
+    $TestData = $null
     $NTPData = New-Object byte[] 48
     $NTPData[0] = 27
     $udpobject = New-Object Net.Sockets.Udpclient([System.Net.Sockets.AddressFamily]::InterNetwork) 
@@ -1037,7 +1059,9 @@ function Test-NTPviaUDP {
         $TestData = $udpobject.Receive([ref]$remoteendpoint)
     } else {
         Write-Log -Message 'No UDP "connection" established' -Component 'TestUDPPort'
-        Write-Log -Message "$($Error[0].Exception.InnerException.Message)" -Component 'TestUDPPort' -Type 2
+        if ($Error.Count -gt 0) {
+            Write-Log -Message "$($Error[0].Exception.InnerException.Message)" -Component 'TestUDPPort' -Type 2
+        }
         return $false
     }
     $udpobject.Close()
@@ -1063,7 +1087,7 @@ function Test-TCPBurstMode {
     $AmountofTimes = [math]::floor([decimal]($MaxDelayInMS / $MinimumWaitTime))
     for ($i = 1; $i -lt $AmountofTimes + 1; $i++) {
         $MaxWaitTime = $($MinimumWaitTime * $i)
-        $TCPResult = Test-TCPPort -Target $WorkObject.url -Port $WorkObject.port -MaxWaitTime $MaxWaitTime
+        $TCPResult = Test-TCPPort -TCPTarget $WorkObject.url -TCPPort $WorkObject.port -MaxWaitTime $MaxWaitTime
         $WorkObject | Add-Member -MemberType NoteProperty -Name "TCP$MaxWaitTime" -Value $TCPResult
     }
 }
@@ -1096,8 +1120,9 @@ function Test-Network {
     $TestObject.DNSResult = $DNS
     if ($DNS) {
         if ($BurstMode) {
-            Test-TCPBurstMode -TCPTarget $TestObject.url
+            Test-TCPBurstMode -WorkObject $TestObject
         } else {
+            $TCP = $false
             if ($TestObject.protocol -ne 'TCP') {
                 Write-Log 'This script can not test UDP ports - only NTP (see log for those results)' -Component 'TestNetwork' -Type 2
             } else {
@@ -1132,10 +1157,55 @@ function Test-Network {
             }
         }
     }
+    Write-Log -Message "TestNetworkResult: $($TestObject.url):$($TestObject.port) DNS=$($TestObject.DNSResult) TCP=$($TestObject.TCPResult) SSL=$($TestObject.SSLTest)" -Component 'TestNetwork'
     $Script:FinalResultList.add($TestObject) | Out-Null
 }
 
 #Service Areas
+function Invoke-INRServiceAreaTest {
+    <#
+    .SYNOPSIS
+    Runs the standard "resolve service IDs, then Test-Network every endpoint"
+    flow for a catalog-defined service area.
+    .DESCRIPTION
+    Collapses the formerly copy-pasted per-area test functions into one
+    data-driven implementation. Service IDs, GCC overrides, port filters, and
+    informational pre-messages all come from Data/ServiceAreas.psd1. The
+    "Testing Service Area ... (Function: Test-<Name>)" marker is emitted with
+    the catalog name so the GUI can map progress to the selected ASA.
+    .PARAMETER AreaName
+    Canonical service-area name (matches the catalog and the GUI list).
+    #>
+    param(
+        [Parameter(Mandatory)][string]$AreaName
+    )
+    $Area = $Script:ServiceAreaByName[$AreaName]
+    if (-not $Area) {
+        Write-Log -Message "Unknown service area requested: $AreaName" -Component 'ServiceAreaTest' -Type 3
+        return $false
+    }
+    $ServiceArea = $Area.Code
+    Write-Log "Testing Service Area $ServiceArea (Function: Test-$($Area.Name))" -Component "Test$ServiceArea"
+    if ($Area.ContainsKey('PreMessages')) {
+        foreach ($PreMessage in $Area.PreMessages) {
+            Write-Log -Message $PreMessage -Component "Test$ServiceArea"
+        }
+    }
+    $ServiceIDs = if ($GCC -and $Area.ContainsKey('GccServiceIds')) { $Area.GccServiceIds } else { $Area.ServiceIds }
+    if ($Area.ContainsKey('FilterPort') -and $Area.FilterPort) {
+        $Resolved = Get-URLsFromID -IDs $ServiceIDs -FilterPort $Area.FilterPort
+    } else {
+        $Resolved = Get-URLsFromID -IDs $ServiceIDs
+    }
+    if (-not($Resolved)) {
+        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
+        return $false
+    }
+    foreach ($Target in $Script:URLsToVerify) {
+        Test-Network $Target
+    }
+    return $true
+}
 function Test-DNSServers {
     <#
     .SYNOPSIS
@@ -1145,7 +1215,7 @@ function Test-DNSServers {
     #>
     $ServiceIDs = 999
     $ServiceArea = "DNSServer"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log 'Testing DNSservers will ignore the local "HOSTS" file.' -Component "Test$ServiceArea"
     $DNSServer = Get-URLsFromID -IDs $ServiceIDs
     if (-not($DNSServer)) {
@@ -1155,113 +1225,49 @@ function Test-DNSServers {
     }
     foreach ($DNSTarget in $Script:URLsToVerify) {
         $UDPDNSTest = Resolve-DnsName "microsoft.com" -DnsOnly -Type A -Server $DNSTarget.url -NoHostsFile -QuickTimeout -ErrorAction SilentlyContinue
-        if (-not($UDPDNSTest)) {
+        if ($UDPDNSTest) {
+            Write-Log "UDP DNS test successful for DNS server $($DNSTarget.url)" -Component $ServiceArea
+        } else {
             Write-Log "UDP DNS test failed for DNS server $($DNSTarget.url) - trying TCP fallback" -Component $ServiceArea -Type 2
             $TCPDNSTest = Resolve-DnsName "microsoft.com" -DnsOnly -Type A -Server $DNSTarget.url -NoHostsFile -TcpOnly -QuickTimeout -ErrorAction SilentlyContinue
-            if (-not($TCPDNSTest)) {
-                Write-Log "TCP DNS test failed for DNS server $($DNSTarget.url) - trying TCP fallback" -Component $ServiceArea -Type 2
+            if ($TCPDNSTest) {
+                Write-Log "TCP DNS test successful for DNS server $($DNSTarget.url)" -Component $ServiceArea
+            } else {
+                Write-Log "TCP DNS test failed for DNS server $($DNSTarget.url)" -Component $ServiceArea -Type 2
             }
-            Write-Log "TCP DNS test successful for DNS server $($DNSTarget.url)" -Component $ServiceArea
         }
-        Write-Log "UDP DNS test successful for DNS server $($DNSTarget.url)" -Component $ServiceArea
     }
     return $true
 }
 function Test-RemoteHelp {
     <#
     .SYNOPSIS
-    This will test all URLs required for RemoteHelp.
-    .NOTES
-    ServiceIDs 181,187,189
-    ServiceIDs GCC 188
-    Remote Help - Default + Required https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?tabs=europe#remote-help
+    Tests Remote Help endpoints. Service IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 181, 187, 189
-    if ($GCC) {
-        $ServiceIDs = 181, 187, 188, 189
-    }
-    $ServiceArea = "RemoteHelp"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $RH = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($RH)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($RHTarget in $Script:URLsToVerify) {
-        Test-Network $RHTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'RemoteHelp'
 }
 function Test-TPMAttestation {
     <#
     .SYNOPSIS
-    This will test all URLs required for TPM attestation.
-    .NOTES
-    ServiceIDs 173,9998
-    https://learn.microsoft.com/en-us/autopilot/requirements?tabs=networking#autopilot-self-deploying-mode-and-autopilot-pre-provisioning
+    Tests TPM attestation endpoints. Service IDs live in Data/ServiceAreas.psd1.
     #>
-
-    $ServiceIDs = 173, 9998
-    $ServiceArea = "TPMAtt"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $TPMAtt = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($TPMAtt)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($TPMTarget in $Script:URLsToVerify) {
-        Test-Network $TPMTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'TPMAttestation'
 }
 function Test-WNS {
     <#
     .SYNOPSIS
-    This will test all URLs required for the windows push notification service (WNS).
-    .NOTES
-    ServiceIDs 169,171
-    https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?tabs=europe#windows-push-notification-serviceswns-dependencies
-    https://www.microsoft.com/en-us/download/details.aspx?id=44238
-    ToDo UPDATE to include login.live.com - see XML file.
+    Tests Windows Push Notification Service (WNS) endpoints. Service IDs live
+    in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 169, 171
-    $ServiceArea = "WNS"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $WNS = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($WNS)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($WNSTarget in $Script:URLsToVerify) {
-        Test-Network $WNSTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'WindowsNotificationService'
 }
 function Test-DeviceHealth {
     <#
     .SYNOPSIS
-    This will test all URLs required for Microsoft Azure Attestation (formerly Device Health).
-    .NOTES
-    ServiceIDs 186
-    GCC 9995
-    https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?tabs=north-america#migrating-device-health-attestation-compliance-policies-to-microsoft-azure-attestation
-    https://learn.microsoft.com/en-us/windows/client-management/mdm/healthattestation-csp
+    Tests Microsoft Azure Attestation (formerly Device Health) endpoints.
+    Service IDs (and the GCC override) live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 186
-    if ($GCC) {
-        $ServiceIDs = 186, 9995
-    }
-    $ServiceArea = "DeviceHealth"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $DH = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($DH)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($DHTarget in $Script:URLsToVerify) {
-        Test-Network $DHTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'DeviceHealth'
 }
 function Test-DeliveryOptimization {
     <#
@@ -1278,7 +1284,7 @@ function Test-DeliveryOptimization {
     #>
     $ServiceIDs = 172, 164, 9994
     $ServiceArea = "DO"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log 'Filtered Port TCP 7680: Documentation will specify port 7680 TCP. This is used to listen to other clients requests (from the host). Not an outbound connection. Availability will be tested' -Component 'TestDO'
     Write-Log 'Filtered Port UDP 3544: Documentation might specify port 3544 UDP (aka Teredo) in/outbound as required - this is required for P2P connections _across NAT_ only' -Component 'TestDO'
     Write-Log 'Verify TCP Port 7680 is being listened on' -Component 'TestDO'
@@ -1304,25 +1310,10 @@ function Test-DeliveryOptimization {
 function Test-Apple {
     <#
     .SYNOPSIS
-    This will test all URLs required for managing Apple devices.
-    .NOTES
-    ServiceIDs 178
-    https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?#apple-dependencies
+    Tests Apple (iOS/iPadOS) management endpoints. Service IDs and the
+    informational notes live in Data/ServiceAreas.psd1.
     #>
-    Write-Log -Message 'Port 5223 is only used as a fallback for push notifications and only valid for push.apple.com addresses' -Component 'TestApple'
-    Write-Log -Message 'Warning: Other URLs might be required, please also consult https://support.apple.com/de-de/101555' -Component 'TestApple' -Type 2
-    $ServiceIDs = 178
-    $ServiceArea = "Apple"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $AAPL = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($AAPL)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($AAPLTarget in $Script:URLsToVerify) {
-        Test-Network $AAPLTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'Apple'
 }
 function Test-Android {
     <#
@@ -1335,10 +1326,14 @@ function Test-Android {
     Write-Log -Message 'Warning: Other URLs might be required, please also consult https://static.googleusercontent.com/media/www.android.com/en//static/2016/pdfs/enterprise/Android-Enterprise-Migration-Bluebook_2019.pdf' -Component 'TestAndroid' -Type 2
     $ServiceIDs = 179, 9992
     $ServiceArea = "Android"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log 'Testing Android connectivity check' -Component "Test$ServiceArea"
-    $AndroidConnectivity = Invoke-WebRequest -Uri https://www.google.com/generate_204
+    try {
+        $AndroidConnectivity = Invoke-WebRequest -Uri 'https://www.google.com/generate_204' -TimeoutSec 10 -UseBasicParsing
+    } catch {
+        Write-Log "Android connectivity check failed: $($_.Exception.Message) - not testing any other addresses" -Component "Test$ServiceArea" -Type 2
+        return $false
+    }
     if ($AndroidConnectivity.StatusCode -ne 204) {
         Write-Log 'Android connectivity check failed - not testing any other addresses' -Component "Test$ServiceArea"
         return $false
@@ -1356,46 +1351,18 @@ function Test-Android {
 function Test-CRL {
     <#
     .SYNOPSIS
-    This will test all well-known CRLs by checking the availability of their respective URLs - _not_ the actual CRL.
-    .NOTES
-    ServiceIDs 84,125,9993
-    Source: Martin Himken - this isn't well documented. From the MSJSON we can assume these are correct
+    Tests well-known CRL endpoints for availability. Service IDs live in
+    Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 84, 125, 9993
-    $ServiceArea = "CRL"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    Write-Log "CRLs should only ever be available through Port 80, however the MS-JSOn specifies 443 as well. Expect errors going forward" -Component "Test$ServiceArea"
-    $CertRevocation = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($CertRevocation)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($CRLTarget in $Script:URLsToVerify) {
-        Test-Network $CRLTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'CRLs'
 }
 function Test-WindowsActivation {
     <#
     .SYNOPSIS
-    This will test all URLs required for windows activation.
-    .NOTES
-    ServiceIDs 9991
-    https://support.microsoft.com/en-us/topic/windows-activation-or-validation-fails-with-error-code-0x8004fe33-a9afe65e-230b-c1ed-3414-39acd7fddf52
+    Tests Windows activation endpoints. Service IDs live in
+    Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 9991
-    $ServiceArea = "WinAct"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    Write-Log 'These following URLs are best effort - there is very little documentation about this' -Component "Test$ServiceArea"
-    $WinAct = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($WinAct)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($WinActTarget in $Script:URLsToVerify) {
-        Test-Network $WinActTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'WindowsActivation'
 }
 function Test-EntraID {
     <#
@@ -1409,7 +1376,7 @@ function Test-EntraID {
     #>
     $ServiceIDs = 9990
     $ServiceArea = "EID"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log 'The following URLs are the bare minimum for EntraID to work - depending on the situation there might be more' -Component "Test$ServiceArea"
     $EID = Get-URLsFromID -IDs $ServiceIDs
     if (-not($EID)) {
@@ -1432,23 +1399,10 @@ function Test-EntraID {
 function Test-WindowsUpdate {
     <#
     .SYNOPSIS
-    This will test all URLs required for Windows Update, this does not include delivery optimization.
-    .NOTES
-    ServiceIDs 164,172,9984
-    https://learn.microsoft.com/en-us/troubleshoot/windows-client/installing-updates-features-roles/windows-update-issues-troubleshooting#device-cant-access-update-files
+    Tests Windows Update endpoints (excludes delivery optimization). Service
+    IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 164, 172, 9984
-    $ServiceArea = "WU"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $WindowsUpdate = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($WindowsUpdate)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($WUTarget in $Script:URLsToVerify) {
-        Test-Network $WUTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'WindowsUpdate'
 }
 function Test-NTP {
     <#
@@ -1462,11 +1416,13 @@ function Test-NTP {
 
     $ServiceIDs = 165
     $ServiceArea = "NTPServers"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log 'Microsofts JSON claims more URLs for Port 123, where in reality its only time.windows.com' -Component "Test$ServiceArea"
     Write-Log 'There are more URLs related to NCSI in the Service ID 165, which will also be tested.' -Component "Test$ServiceArea" 
     $NTPServerNotDefault = $true
-    $CurrentTimeServer = (Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\Config\Status' -Name LastGoodSampleInfo -ErrorAction SilentlyContinue).split(';')[1]
+    $CustomTimeServerTestResult = $null
+    $LastGoodSample = Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\W32Time\Config\Status' -Name LastGoodSampleInfo -ErrorAction SilentlyContinue
+    $CurrentTimeServer = if ($LastGoodSample) { $LastGoodSample.split(';')[1] } else { '' }
     if ($CurrentTimeServer -like '*time.windows.com*') {
         $NTPServerNotDefault = $false
         Write-Log 'time.windows.com is the default timeserver - skipping custom server test' -Component "Test$ServiceArea"
@@ -1479,7 +1435,8 @@ function Test-NTP {
     }
     Write-Log 'Testing default NTP server' -Component "Test$ServiceArea" 
     $DefaultTimeServerTestResult = w32tm /stripchart /computer:time.windows.com /dataonly /samples:3
-    if ($DefaultTimeServerTestResult -like "*80072AF9*" -or $DefaultTimeServerTestResult[3 - ($DefaultTimeServerTestResult.count)] -like "*800705B4*") {
+    $DefaultTimeServerText = ($DefaultTimeServerTestResult | Out-String)
+    if ($DefaultTimeServerText -like "*80072AF9*" -or $DefaultTimeServerText -like "*800705B4*") {
         Write-Log 'Testing with w32tm failed - switching to UDP test for NTP' -Component "Test$ServiceArea" -Type 2
         $DefaultTimeServerTestResult = Test-NTPviaUDP 'time.windows.com' -Port 123
     }
@@ -1502,67 +1459,24 @@ function Test-NTP {
 function Test-DiagnosticsData {
     <#
     .SYNOPSIS
-    This tests all URLs required to send diagnostic data to Microsoft endpoints.
-    .NOTES
-    ServiceIDs 69,9983
-    https://learn.microsoft.com/en-us/windows/privacy/manage-windows-11-endpoints
+    Tests diagnostic-data endpoints. Service IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 69, 9983
-    $ServiceArea = "Diagnostics"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $Diagnostics = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($Diagnostics)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($DiagnosticsTarget in $Script:URLsToVerify) {
-        Test-Network $DiagnosticsTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'DiagnosticsData'
 }
 function Test-DiagnosticsDataUpload {
     <#
     .SYNOPSIS
-    This tests all URLs required to send collected diagnostics data to Intune (yes, the .zip file).
-    .NOTES
-    ServiceIDs 182,9989
-    https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?#autopilot-dependencies
-    https://learn.microsoft.com/en-us/mem/intune/remote-actions/collect-diagnostics#requirements-for-windows-devices
-    Also called "Autopilot automatic device diagnostics collection"
+    Tests diagnostic-data upload endpoints (Autopilot automatic device
+    diagnostics collection). Service IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 182, 9989
-    $ServiceArea = "DiagnosticsUpload"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $DiagUpload = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($DiagUpload)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($DiagUploadTarget in $Script:URLsToVerify) {
-        Test-Network $DiagUploadTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'DiagnosticsDataUpload'
 }
 function Test-EndpointAnalytics {
     <#
     .SYNOPSIS
-    This will test all URLs required for endpoint analytics to receive data.
-    .NOTES
-    ServiceIDs 69,163,9988
-    https://learn.microsoft.com/en-us/mem/analytics/troubleshoot#bkmk_endpoints
+    Tests Endpoint Analytics endpoints. Service IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 69, 163, 9988
-    $ServiceArea = "EndpAnalytics"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $EndpAnalytics = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($EndpAnalytics)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($EndpAnalyticsTarget in $Script:URLsToVerify) {
-        Test-Network $EndpAnalyticsTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'EndpointAnalytics'
 }
 function Test-NCSI {
     <#
@@ -1575,10 +1489,10 @@ function Test-NCSI {
     #>
     $ServiceIDs = 165, 9987
     $ServiceArea = "NetworkIndicator"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log "Service ID 165 is mixed up with NTP, hence Service ID 9987 is required to only test the correct URLs and ports" -Component "Test$ServiceArea" -Type 2
     try {
-        $NCSIActive = (Get-ItemPropertyValue -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator -Name NoActiveProbe -ErrorAction Stop | Out-Null) -eq 0
+        $NCSIActive = (Get-ItemPropertyValue -Path HKLM:\SOFTWARE\Policies\Microsoft\Windows\NetworkConnectivityStatusIndicator -Name NoActiveProbe -ErrorAction Stop) -eq 0
     } catch {
         $NCSIActive = $true
     }
@@ -1606,7 +1520,7 @@ function Test-MicrosoftStore {
     #>
     $ServiceIDs = 9996
     $ServiceArea = "MS"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $MicrosoftStore = Get-URLsFromID -IDs $ServiceIDs
     if (-not($MicrosoftStore)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1635,7 +1549,7 @@ function Test-AppInstaller {
     https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?#microsoft-store
     #>
     $ServiceArea = "AppInstall"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     Write-Log "Testing $ServiceArea is the same requirement as for the Microsoft store, this doesn't include downloads from vendor setup files (which depend on each package)" -Component "Test$ServiceArea" -Type 2
     if ($TestAllServiceAreas) {
         Write-Log 'TestAllServiceAreas detected - not re-running sub-tests for this service area' -Component "Test$ServiceArea"
@@ -1650,23 +1564,10 @@ function Test-AppInstaller {
 function Test-SelfDeploying {
     <#
     .SYNOPSIS
-    This will test all the URLs that are required for the Autopilot self-deployment mode to work.
-    .NOTES
-    ServiceID 173, 9998
-    https://learn.microsoft.com/en-us/autopilot/requirements?tabs=networking#autopilot-self-deploying-mode-and-autopilot-pre-provisioning
+    Tests Autopilot self-deployment endpoints. Service IDs live in
+    Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 173, 9998
-    $ServiceArea = "SelfDepl"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $SelfDepl = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($SelfDepl)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($SelfDeplTarget in $Script:URLsToVerify) {
-        Test-Network $SelfDeplTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'SelfDeploying'
 }
 function Test-Legacy {
     <#
@@ -1678,53 +1579,20 @@ function Test-Legacy {
 function Test-UniversalPrint {
     <#
     .SYNOPSIS
-    This will test all the URLs that are required for Universal Print
-    .NOTES
-    ServiceID 9982,9981,9980
-    https://learn.microsoft.com/en-us/universal-print/fundamentals/universal-print-faqs
-    As this is a script that tests client connections, the connector URLs are _not tested_. 
-    Applicationinsight addresses are not documented. You can look at these by running "az account list-locations -o table"
+    Tests Universal Print endpoints. Service IDs (and the GCC override) live in
+    Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 9982, 9980
-    if ($GCC) {
-        $ServiceIDs = 9981, 9980
-    }
-    $ServiceArea = "UniP"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $UniP = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($UniP)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($UniPTarget in $Script:URLsToVerify) {
-        Test-Network $UniPTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'UniversalPrint'
 }
 
 #Additional ASAs
 function Test-ConnectedCache {
     <#
     .SYNOPSIS
-    This will test all URLs required for connected cache.
-    .NOTES
-    ServiceIDs 5000..5010
-    (URL is misleadingly named as "Delivery-Optimization-Endpoints" but is actually about MCC)
-    https://learn.microsoft.com/en-us/windows/deployment/do/delivery-optimization-endpoints 
+    Tests Microsoft Connected Cache (MCC) endpoints. Service IDs and the port
+    filter live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 5000..5010
-    $ServiceArea = "MCC"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    Write-Log 'This service area will also test for MCC domains being available' -Component "Test$ServiceArea"
-    $ConnectedCache = Get-URLsFromID -IDs $ServiceIDs -FilterPort 7680, 3544
-    if (-not($ConnectedCache)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($MCCTarget in $Script:URLsToVerify) {
-        Test-Network $MCCTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'ConnectedCache'
 }
 function Test-VisualStudio {
     <#
@@ -1748,7 +1616,7 @@ function Test-VisualStudio {
         $ServiceIDs += 9976
     }
     $ServiceArea = "VSt"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $VSt = Get-URLsFromID -IDs $ServiceIDs
     if (-not($VSt)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1771,22 +1639,11 @@ function Test-MDE {
     https://aka.ms/MDE-streamlined-urls
     Use this tool to do further testing https://aka.ms/mdeanalyzer
     #>
-    [string[]]$ServiceIDs = @()
-    if ($DefenderFull) {
-        $ServiceIDs += 6000
-    }
-    if ($DefenderSmartScreen -or $DefenderFull -or $DefenderOptional) {
-        $ServiceIDs += 6001
-    }
-    if ($DefenderLiveResponse -or $DefenderFull -or $DefenderOptional) {
-        [int[]]$ServiceIDs += 6002
-    }
-    if ($DefenderVulnTool -or $DefenderFull -or $DefenderOptional) {
-        $ServiceIDs += 6003
-    }
+    # All Defender areas (Full/Optional/SmartScreen/LiveResponse/VulnTool) share
+    # one test pass across the full Defender ID set.
     $ServiceIDs = 6000, 6001, 6002, 6003
     $ServiceArea = "Defender"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $Defender = Get-URLsFromID -IDs $ServiceIDs
     if (-not($Defender)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1809,7 +1666,7 @@ function Test-AuthenticatedProxy {
     #>
     $ServiceIDs = 9986
     $ServiceArea = "AuthenProxy"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $AuthenProxy = Get-URLsFromID -IDs $ServiceIDs
     if (-not($AuthenProxy)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1834,7 +1691,7 @@ function Test-SSLInspection {
     #>
     $ServiceIDs = 9985
     $ServiceArea = "TLSInspec"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $TLSInspec = Get-URLsFromID -IDs $ServiceIDs
     if (-not($TLSInspec)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1852,7 +1709,7 @@ function Test-SSLInspection {
         Write-Log 'TestAllServiceAreas detected - not re-running sub-tests for this service area' -Component "Test$ServiceArea"
     }
     foreach ($TLSInspectObject in $Script:FinalResultList) {
-        if ($($Script:FinalResultList | Where-Object { $_.url -eq $TLSInspectObject.url -and $_.port -eq $TLSInspectObject.port -and $_.SSLInspection -eq 'True' })) {
+        if ($($Script:FinalResultList | Where-Object { $_.url -eq $TLSInspectObject.url -and $_.port -eq $TLSInspectObject.port -and $_.SSLInterception -eq 'True' })) {
             Write-Log -Message "The traffic to $($TLSInspectObject.url) is probably inspected - this is not supported!" -Component "Test$ServiceArea" -Type 3
         }
     }
@@ -1872,7 +1729,7 @@ function Test-M365 {
         Write-Log 'UseMS365JSON was not specified. This test can not be performed, because most IDs are not available' -Component "Test$ServiceArea" -Type 3
         return $false
     }
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $M365FullTest = Get-URLsFromID -IDs $ServiceIDs
     if (-not($M365FullTest)) {
         Write-Log -Message 'No matching ID found for service area: Windows Update' -Component "Test$ServiceArea" -Type 3
@@ -1886,44 +1743,18 @@ function Test-M365 {
 function Test-AppAndScripts {
     <#
     .SYNOPSIS
-    This will test all the URLs that are required for Win32 App deployment and PowerShell Script Deployment for Windows and Mac
-    .NOTES
-    ServiceID 170
-    https://learn.microsoft.com/en-us/mem/intune/fundamentals/intune-endpoints?#network-requirements-for-powershell-scripts-and-win32-apps
+    Tests Win32 app and PowerShell/macOS script deployment endpoints. Service
+    IDs live in Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 170, 9979
-    $ServiceArea = "W32Script"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $W32Script = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($W32Script)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($W32ScriptTarget in $Script:URLsToVerify) {
-        Test-Network $W32ScriptTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'AppAndScript'
 }
 function Test-NuGet {
     <#
     .SYNOPSIS
-    Test all URLs required to use NuGet aka PowerShell Gallery
-    .NOTES
-    ServiceIDs 9975
-    https://learn.microsoft.com/en-us/powershell/gallery/how-to/getting-support/troubleshooting-cmdlets?view=powershellget-3.x#required-network-endpoints
+    Tests NuGet / PowerShell Gallery endpoints. Service IDs live in
+    Data/ServiceAreas.psd1.
     #>
-    $ServiceIDs = 9975
-    $ServiceArea = "NuGet"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
-    $NuGet = Get-URLsFromID -IDs $ServiceIDs
-    if (-not($NuGet)) {
-        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
-        return $false
-    }
-    foreach ($NuGetTarget in $Script:URLsToVerify) {
-        Test-Network $NuGetTarget
-    }
-    return $true
+    return Invoke-INRServiceAreaTest -AreaName 'NuGet'
 }
 function Test-Autopilot {
     <#
@@ -1937,7 +1768,7 @@ function Test-Autopilot {
     #>
     $ServiceIDs = '9999'
     $ServiceArea = 'AP'
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $AP = Get-URLsFromID -IDs $ServiceIDs
     if (-not($AP)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -1986,7 +1817,7 @@ function Test-Intune {
     #>
     $ServiceIDs = 56, 150, 59, 163, 172, 170, 97, 190, 189, 9998, 9985, 9997
     $ServiceArea = "Int"
-    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    Write-Log "Testing Service Area $ServiceArea (Function: $($MyInvocation.MyCommand.Name))" -Component "Test$ServiceArea"
     $Int = Get-URLsFromID -IDs $ServiceIDs
     if (-not($Int)) {
         Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
@@ -2018,7 +1849,7 @@ function Test-Intune {
 }
 
 #Data Functions
-function Build-OutputCSV {
+function Export-INROutputCsv {
     <#
     .SYNOPSIS
     Creates either a URL result list or a merged CSV file.
@@ -2047,6 +1878,7 @@ function Merge-ResultFiles {
     if ($CSVInput) {
         if ($CSVInput.count -ne 2) {
             Write-Log 'Currently, this script can only handle two file comparisons. Please provide only 2 CSVs' -Component 'MergeResultFiles' -Type 3
+            return $false
         }
     } elseif(Start-CSVAutodetection) {
         $CSVInput = $Script:AutodetectedCSVs
@@ -2108,109 +1940,29 @@ function Merge-ResultFiles {
 function Start-Tests {
     <#
     .SYNOPSIS
-    Starts either all, specific, or individual tests based on user input.
+    Dispatches the selected service-area tests using the shared catalog.
+    .DESCRIPTION
+    Runs a service area when its matching switch parameter is set, or when
+    -TestAllServiceAreas is supplied and the area participates in "all". Areas
+    that share a Group (Visual Studio, Defender) run their handler only once.
     #>
-    if ($Intune -or $TestAllServiceAreas) {
-        Write-Log -Message "Intune result: $(Test-Intune)" -Component 'StartTests'
+    $ExecutedGroups = [System.Collections.Generic.List[string]]::new()
+    foreach ($Area in $Script:ServiceAreaCatalog) {
+        $SwitchValue = Get-Variable -Name $Area.Name -ValueOnly -ErrorAction SilentlyContinue
+        $Selected = [bool]$SwitchValue
+        $RunByAll = $TestAllServiceAreas -and $Area.IncludedInAll
+        if (-not ($Selected -or $RunByAll)) {
+            continue
+        }
+        if ($Area.ContainsKey('Group')) {
+            if ($ExecutedGroups.Contains($Area.Group)) {
+                continue
+            }
+            [void]$ExecutedGroups.Add($Area.Group)
+        }
+        $TestResult = & $Area.Function
+        Write-Log -Message "$($Area.Name) result: $TestResult" -Component 'StartTests'
     }
-    if ($Autopilot -or $TestAllServiceAreas) {
-        Write-Log -Message "Autopilot result: $(Test-Autopilot)" -Component 'StartTests'
-    }
-    if ($WindowsActivation -or $TestAllServiceAreas) {
-        Write-Log -Message "Windows activation result: $(Test-WindowsActivation)" -Component 'StartTests'
-    }
-    if ($EntraID -or $TestAllServiceAreas) {
-        Write-Log -Message "Entra ID result: $(Test-EntraID)" -Component 'StartTests'
-    }
-    if ($WindowsUpdate -or $TestAllServiceAreas) {
-        Write-Log -Message "Windows Update result: $(Test-WindowsUpdate)" -Component 'StartTests'
-    }
-    if ($DeliveryOptimization -or $TestAllServiceAreas) {
-        Write-Log -Message "Delivery Optimization result: $(Test-DeliveryOptimization)" -Component 'StartTests'
-    }
-    if ($NTP -or $TestAllServiceAreas) {
-        Write-Log -Message "NTP result: $(Test-NTP)" -Component 'StartTests'
-    }
-    if ($DNS -or $TestAllServiceAreas) {
-        Write-Log -Message "DNS result: $(Test-DNSServers)" -Component 'StartTests'
-    }
-    if ($DiagnosticsData -or $TestAllServiceAreas) {
-        Write-Log -Message "Diagnostics Data result: $(Test-DiagnosticsData)" -Component 'StartTests'
-    }
-    if ($DiagnosticsDataUpload -or $TestAllServiceAreas) {
-        Write-Log -Message "Diagnostics Data Upload result: $(Test-DiagnosticsDataUpload)" -Component 'StartTests'
-    }
-    if ($NCSI -or $TestAllServiceAreas) {
-        Write-Log -Message "NCSI result: $(Test-NCSI)" -Component 'StartTests'
-    }
-    if ($WindowsNotificationService -or $TestAllServiceAreas) {
-        Write-Log -Message "WNS result: $(Test-WNS)" -Component 'StartTests'
-    }
-    if ($WindowsStore -or $TestAllServiceAreas) {
-        Write-Log -Message "Windows Store result: $(Test-MicrosoftStore)" -Component 'StartTests'
-    }
-    if ($M365 -or $TestAllServiceAreas) {
-        Write-Log -Message "M365 result: $(Test-M365)" -Component 'StartTests'
-    }
-    if ($CRLs -or $TestAllServiceAreas) {
-        Write-Log -Message "CRLs result: $(Test-CRL)" -Component 'StartTests'
-    }
-    if ($SelfDeploying -or $TestAllServiceAreas) {
-        Write-Log -Message "Self-Deploying result: $(Test-SelfDeploying)" -Component 'StartTests'
-    }
-    if ($RemoteHelp -or $TestAllServiceAreas) {
-        Write-Log -Message "Remote Help result: $(Test-RemoteHelp)" -Component 'StartTests'
-    }
-    if ($TPMAttestation -or $TestAllServiceAreas) {
-        Write-Log -Message "TPM Attestation result: $(Test-TPMAttestation)" -Component 'StartTests'
-    }
-    if ($DeviceHealth -or $TestAllServiceAreas) {
-        Write-Log -Message "Device Health result: $(Test-DeviceHealth)" -Component 'StartTests'
-    }
-    if ($Apple -or $TestAllServiceAreas) {
-        Write-Log -Message "Apple result: $(Test-Apple)" -Component 'StartTests'
-    }
-    if ($Android -or $TestAllServiceAreas) {
-        Write-Log -Message "Android result: $(Test-Android)" -Component 'StartTests'
-    }
-    if ($EndpointAnalytics -or $TestAllServiceAreas) {
-        Write-Log -Message "Endpoint Analytics result: $(Test-EndpointAnalytics)" -Component 'StartTests'
-    }
-    if ($AppInstaller -or $TestAllServiceAreas) {
-        Write-Log -Message "App Installer result: $(Test-AppInstaller)" -Component 'StartTests'
-    }
-    if ($AuthenticatedProxyOnly -or $TestAllServiceAreas) {
-        Write-Log -Message "Authenticated Proxy result: $(Test-AuthenticatedProxy)" -Component 'StartTests'
-    }
-    if ($TestSSLInspectionOnly -or $TestAllServiceAreas) {
-        Write-Log -Message "SSL Inspection result: $(Test-SSLInspection)" -Component 'StartTests'
-    }
-    if ($Legacy -or $TestAllServiceAreas) {
-        Write-Log -Message "Legacy result: $(Test-Legacy)" -Component 'StartTests'
-    }
-    if ($UniversalPrint -or $TestAllServiceAreas) {
-        Write-Log -Message "Universal Print result: $(Test-UniversalPrint)" -Component 'StartTests'
-    }
-    if ($AppAndScript -or $TestAllServiceAreas) {
-        Write-Log -Message "Win32 and Script deployment result: $(Test-AppAndScripts)" -Component 'StartTests'
-    }
-    if ($NuGet -or $TestAllServiceAreas) {
-        Write-Log -Message "NuGet deployment result: $(Test-NuGet)" -Component 'StartTests'
-    }
-    if ( $ConnectedCache ) {
-        Write-Log -Message "Connected Cache result: $(Test-ConnectedCache)" -Component 'StartTests'
-    }
-    if ($VisualStudioFull -or $VisualStudioInstallation) {
-        Write-Log -Message "Visual Studio Full result: $(Test-VisualStudio)" -Component 'StartTests'
-    }
-    if ($DefenderFull -or $DefenderSmartScreen -or $DefenderLiveResponse -or $DefenderVulnTool -or $DefenderOptional) {
-        Write-Log -Message "Microsoft Defender for Endpoint result: $(Test-MDE)" -Component 'StartTests'
-    }
-}
-function Start-Brienmode {
-    $Null = Read-Host -Prompt "Please press any key to continue"
-    Initialize-Script
-    Start-Tests
 }
 function Start-CSVAutodetection {
     param(
@@ -2220,6 +1972,7 @@ function Start-CSVAutodetection {
     .NOTES
     This function will automatically detect the two latest CSV files in the output folder and set them as input for merging.
     #>
+	Write-Log 'No CSV files were provided, trying to autodetect' -Component 'StartCSVAutodetection'
     $Candidates = @()
     if ($Script:OutpathFilePath -and (Test-Path $Script:OutpathFilePath)) {
         Write-Log "Looking for CSV files in $($Script:OutpathFilePath)" -Component 'StartCSVAutodetection'
@@ -2249,69 +2002,37 @@ function Start-CSVAutodetection {
     return $true
 }
 function Start-ProcessingResults {
-    if ($BrienMode) {
-        Write-Output "BrienMode is activated: This is an interactive mode that will let you test multiple times on the same box"
-        Write-Output "Remember this will only compare the LATEST TWO results"
-        for ($i = 1; $i -le $BrienMode; $i++) {
-            if ($i -ge 2) {
-                Write-Log -Message 'RERUNNING TESTS WITH NEW NETWORK PARAMETERS' -Component 'BrienMode' -Type 2
-                Write-Warning "Please change your network now to run the test again - this will always create output CSVs"
+    if ($OutputCSV -and -not($MergeResults)) {
+        Export-INROutputCsv
+    }
+    if ($MergeResults) {
+        Write-Log 'Merging two provided CSV files' -Component 'ProcessingResults'
+        if (-not($MergeCSVs) -or $MergeCSVs.count -ne 2) {
+            if (-not(Start-CSVAutodetection)) {
+                Write-Log 'No two files to merge found using Auto-Detect. Merging results aborted' -Component 'ProcessingResults' -Type 2
+                return
             }
-            Start-Brienmode
-            Build-OutputCSV
-            if ($ShowResults) {
-                $Script:FinalResultList | Out-GridView -Title "Intune Network test (Brien Mode) $($Script:MergeCSVComputername1) pass $i"
-            }
+            $MergeCSVs = $Script:AutodetectedCSVs
         }
-        Start-CSVAutodetection -NoPrompt
-        #$MergeCSVs = (Get-ChildItem -Path $Script:OutpathFilePath -Filter *.csv | Sort-Object -Property LastWriteTime -Top 2 -Descending).FullName
         if (-not(Merge-ResultFiles -CSVInput $MergeCSVs)) {
-            Write-Log 'BRIENMODE: Something went wrong while comparing the files, please check the logs' -Component 'ProcessingResults' -Type 2
-            return $false
-        }
-        if (-not($Script:ComparedResults)) {
-            Write-Log 'BRIENMODE: The comparison found no differences between the two provided CSVs' -Component 'ProcessingResults' -Type 2
+            Write-Log 'The comparison found no differences between the two provided CSVs' -Component 'ProcessingResults' -Type 2
         } else {
             if ($ShowResults) {
-                $Script:ComparedResults | Sort-Object -Property url | Out-GridView -Title "BRIENMODE: Merge result between: $($Script:MergeCSVComputername1) and $($Script:MergeCSVComputername2)" -Wait
+                $Script:ComparedResults | Sort-Object -Property url | Out-GridView -Title "Merge result between: $($Script:MergeCSVComputername1) and $($Script:MergeCSVComputername2)" -Wait
             }
-            Build-OutputCSV -InputCSVs $MergeCSVs
-        }
-    } else {
-        if ($OutputCSV -and -not($MergeResults)) {
-            Build-OutputCSV
-        }
-        if ($MergeResults) {
-            Write-Log 'Merging two provided CSV files' -Component 'ProcessingResults'
-            if (-not($MergeCSVs) -or $MergeCSVs.count -ne 2) {
-                if (-not(Start-CSVAutodetection)) {
-                    Write-Log 'Merging results aborted' -Component 'ProcessingResults' -Type 2
-                    return
-                }
-                $MergeCSVs = $Script:AutodetectedCSVs
-            }
-            if (-not(Merge-ResultFiles -CSVInput $MergeCSVs)) {
-                Write-Log 'The comparison found no differences between the two provided CSVs' -Component 'ProcessingResults' -Type 2
-            } else {
-                if ($ShowResults) {
-                    $Script:ComparedResults | Sort-Object -Property url | Out-GridView -Title "Merge result between: $($Script:MergeCSVComputername1) and $($Script:MergeCSVComputername2)" -Wait
-                }
-                if ($OutputCSV) {
-                    Build-OutputCSV -InputCSVs $MergeCSVs
-                }
+            if ($OutputCSV) {
+                Export-INROutputCsv -InputCSVs $MergeCSVs
             }
         }
-        if ($ShowResults) {
-            $Script:FinalResultList | Out-GridView -Title 'Intune Network test results' -Wait
-        }
-    }   
+    }
+    if ($ShowResults) {
+        $Script:FinalResultList | Out-GridView -Title 'Intune Network test results' -Wait
+    }
 }
 
 #Start coding!
 Initialize-Script
-if (-not($BrienMode)) {
-    Start-Tests
-}
+Start-Tests
 Start-ProcessingResults
 Write-SettingsToLog
 Write-Log 'Thanks for using INR' -Component 'INRMain'
