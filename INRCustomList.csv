@@ -1,5 +1,6 @@
 #Custom List for Intune Network Requirements made by Martin Himken
 #Timestamp: 2025-08-04
+"settings-win-ppe.data.microsoft.com", 443, TCP, 10000
 "1.1.1.1", 53, UDP, 999
 "1.0.0.1", 53, UDP, 999
 "8.8.8.8", 53, UDP, 999
@@ -36,6 +37,7 @@
 "southafricawest.in.applicationinsights.azure.com", 443, TCP,9980
 "functional.events.data.microsoft.com", 443, TCP, 9983
 "browser.events.data.msn.com", 80, TCP, 9983
+"browser.pipe.aria.microsoft.com", 443, TCP, 9983
 "www.microsoft.com", 443, TCP, 9983
 "self.events.data.microsoft.com", 443, TCP, 9983
 "self.events.data.microsoft.com", 80, TCP, 9983

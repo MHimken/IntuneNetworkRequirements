@@ -103,6 +103,8 @@ Specifies whether to test the Defender SmartScreen service area. Not included in
 Specifies whether to test the deployment domains for Win32, Windows script, macOS app and macOS script deployment.
 .PARAMETER NuGet
 Specifies whether to test for PowerShell Gallery with the default NuGet provider.
+.PARAMETER TrustMeBro
+Tests custom URL entries with ID 10000. This Custom-only test cannot be combined with another Artificial Service Area or Product and is not included in TestAllServiceAreas.
 .PARAMETER AuthenticatedProxyOnly
 Will test if there is an authenticated proxy in use - does not test other service areas.
 .PARAMETER TestSSLInspectionOnly
@@ -185,6 +187,7 @@ param(
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom', Position = 0, Mandatory)]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly', Mandatory)]
     [string]$CustomURLFile,
 
     [Parameter(ParameterSetName = 'AllAreas', Position = 0, Mandatory)]
@@ -195,12 +198,14 @@ param(
     [Parameter(ParameterSetName = 'TestMSJSON', Position = 1)]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom', Position = 1)]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [switch]$AllowBestEffort,
 
     [Parameter(ParameterSetName = 'AllAreas')]
     [Parameter(ParameterSetName = 'TestMSJSON', Position = 2)]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom', Position = 2)]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [switch]$CheckCertRevocation,
 
     [Parameter(ParameterSetName = 'AllAreas')]
@@ -208,7 +213,7 @@ param(
     [Parameter(ParameterSetName = 'TestCustom')]
     [switch]$GCC,
 
-    #Service Areas
+    #Artificial Service Areas
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
     [switch]$Intune,
@@ -288,7 +293,11 @@ param(
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
     [switch]$NuGet,
-    #Additional ASAs
+
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
+    [switch]$TrustMeBro,
+
+    #Products
     #Connected Cache
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
@@ -336,14 +345,17 @@ param(
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [int]$MaxDelayInMS = 300, # 300 is the minimum recommended due to some Microsoft services being heavy load (like MS Update)
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [switch]$BurstMode, # Divide the delay by 50 and try different speeds. Give warning when more than 10 URLs are tested
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [int]$BrienMode,
 
     #Merge options
@@ -366,12 +378,14 @@ param(
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
     [Parameter(ParameterSetName = 'Merge')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [switch]$OutputCSV,
     [Parameter(ParameterSetName = 'AllAreas')]
     [Parameter(ParameterSetName = 'TestMSJSON')]
     [Parameter(ParameterSetName = 'TestMS365JSON')]
     [Parameter(ParameterSetName = 'TestCustom')]
     [Parameter(ParameterSetName = 'Merge')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [switch]$ShowResults,
     #Common parameters
     [switch]$NoOutput,
@@ -545,6 +559,10 @@ function Write-SettingsToLog {
         AppInstaller: $AppInstaller
         UniversalPrint: $UniversalPrint
         AppAndScript: $AppAndScript
+
+        TrustMeBro: $TrustMeBro
+
+        Products
         VisualStudioFull: $VisualStudioFull
         VisualStudioInstallation: $VisualStudioInstallation
         DefenderFull: $DefenderFull
@@ -1135,7 +1153,7 @@ function Test-Network {
     $Script:FinalResultList.add($TestObject) | Out-Null
 }
 
-#Service Areas
+#Artificial Service Areas
 function Test-DNSServers {
     <#
     .SYNOPSIS
@@ -1702,7 +1720,28 @@ function Test-UniversalPrint {
     return $true
 }
 
-#Additional ASAs
+function Test-TrustMeBro {
+    <#
+    .SYNOPSIS
+    Tests custom URLs that are not assigned to another Artificial Service Area or Product.
+    .NOTES
+    ServiceID 10000
+    #>
+    $ServiceIDs = 10000
+    $ServiceArea = "TrustMeBro"
+    Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
+    $TrustMeBroURLs = Get-URLsFromID -IDs $ServiceIDs
+    if (-not($TrustMeBroURLs)) {
+        Write-Log -Message "No matching ID found for service area: $ServiceArea" -Component "Test$ServiceArea" -Type 3
+        return $false
+    }
+    foreach ($TrustMeBroTarget in $Script:URLsToVerify) {
+        Test-Network $TrustMeBroTarget
+    }
+    return $true
+}
+
+#Products
 function Test-ConnectedCache {
     <#
     .SYNOPSIS
@@ -2196,6 +2235,9 @@ function Start-Tests {
     }
     if ($NuGet -or $TestAllServiceAreas) {
         Write-Log -Message "NuGet deployment result: $(Test-NuGet)" -Component 'StartTests'
+    }
+    if ($TrustMeBro) {
+        Write-Log -Message "TrustMeBro result: $(Test-TrustMeBro)" -Component 'StartTests'
     }
     if ( $ConnectedCache ) {
         Write-Log -Message "Connected Cache result: $(Test-ConnectedCache)" -Component 'StartTests'

@@ -2,6 +2,13 @@
 
 ## 2026
 
+### 1st of September
+
+- Add: TrustMeBro Artificial Service Area for custom URL ID 10000
+- Add: Custom-only `TrustMeBro` parameter set that is exclusive from other Artificial Service Areas and Products and excluded from `TestAllServiceAreas`
+- Update: Grouped test parameters and functions into Artificial Service Areas and Products
+- Update: Expanded [README.MD](README.MD) with parameter references, supported combinations, examples, expected Intune runtime, and overlapping service-area dependencies
+
 ### 25th of January
 
 - Fix: Win32 App and Script endpoints were swapped

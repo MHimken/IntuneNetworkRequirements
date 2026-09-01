@@ -5,6 +5,7 @@ This list is used to map the custom IDs used in several '(artificial) service ar
 | ID | Service(s) | Used in List | Notes |
 | ---- | ------------ | -------------- | ------- |
 | 999 | DNS Servers | [INR CustomList](INRCustomList.csv) | |
+| 10000 | TrustMeBro | Source: Me | These URLs are also important - trust me on this. |
 | 9999 | Autopilot | [INR CustomList](INRCustomList.csv) | |
 | 9998 | TPM Attestation | [INR CustomList](INRCustomList.csv) | Used instead of wildcard - no TLS inspection allowed |
 | 9997 | Intune Management | [INR CustomList](INRCustomList.csv) | Used instead of wildcard - no TLS inspection allowed |
@@ -31,17 +32,17 @@ This list is used to map the custom IDs used in several '(artificial) service ar
 | 9976 | Visual Studio - All other | [VisualStudio](VisualStudio.csv) | These URLs are for Visual Studio downloads and updates |
 | 9975 | NuGet | [INR CustomList](INRCustomList.csv) | These URLs are for NuGet package manager |
 | 5000 | MCC - Core | [MCC](MCC.csv) | Windows Update, Windows Defender, Windows Drivers, Windows Store, Windows Drivers, Windows Store plus Edge and MCC to Delivery Optimization service communications |
-| 5001 | MCC - Office |[MCC](MCC.csv) | Office Updates |
-| 5002 | MCC - Intune Win32 Apps |[MCC](MCC.csv) | Intune Win32 Apps |
-| 5003 | MCC - Teams |[MCC](MCC.csv) | Teams |
-| 5004 | MCC - Outlook |[MCC](MCC.csv) | Outlook |
-| 5005 | MCC - Xbox |[MCC](MCC.csv) | Xbox |
-| 5006 | MCC - Device Update |[MCC](MCC.csv) | [Device Update](https://learn.microsoft.com/azure/iot-hub-device-update/?WT.mc_id=MVP_444422) |
-| 5007 | MCC - IoT |[MCC](MCC.csv) | IoT Edge / IoT Hub communication |
-| 5008 | MCC - Ubuntu |[MCC](MCC.csv) | Ubuntu package updates |
-| 5009 | MCC - Microsoft Packages |[MCC](MCC.csv) | Microsoft package updates |
+| 5001 | MCC - Office | [MCC](MCC.csv) | Office Updates |
+| 5002 | MCC - Intune Win32 Apps | [MCC](MCC.csv) | Intune Win32 Apps |
+| 5003 | MCC - Teams | [MCC](MCC.csv) | Teams |
+| 5004 | MCC - Outlook | [MCC](MCC.csv) | Outlook |
+| 5005 | MCC - Xbox | [MCC](MCC.csv) | Xbox |
+| 5006 | MCC - Device Update | [MCC](MCC.csv) | [Device Update](https://learn.microsoft.com/azure/iot-hub-device-update/?WT.mc_id=MVP_444422) |
+| 5007 | MCC - IoT | [MCC](MCC.csv) | IoT Edge / IoT Hub communication |
+| 5008 | MCC - Ubuntu | [MCC](MCC.csv) | Ubuntu package updates |
+| 5009 | MCC - Microsoft Packages | [MCC](MCC.csv) | Microsoft package updates |
 | 5010 | MCC - Azure IoT | [MCC](MCC.csv) | Azure IoT Identity Service |
 | 6003 | Microsoft Defender for Endpoint (optional) | [MicrosoftDefender](MicrosoftDefender.csv) | Microsoft Vulnerability Management |
 | 6002 | Microsoft Defender for Endpoint (optional) | [MicrosoftDefender](MicrosoftSignIn.csv) | Microsoft Live Response |
-| 6001 | Microsoft Defender for Endpoint (optional)  | [MicrosoftDefender](SmartScreen.csv) | SmartScreen |
+| 6001 | Microsoft Defender for Endpoint (optional) | [MicrosoftDefender](SmartScreen.csv) | SmartScreen |
 | 6000 | Microsoft Defender for Endpoint (required) | [MicrosoftDefender](MicrosoftDefender.csv) | Microsoft Defender for Endpoint core |
