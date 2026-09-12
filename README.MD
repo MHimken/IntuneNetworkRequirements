@@ -21,6 +21,45 @@ For each selected endpoint, INR can perform these checks in order:
 
 Certificate revocation list verification and SSL inspection detection are available with `-CheckCertRevocation`.
 
+## Proxy Testing
+
+`-ProxyMode` controls how HTTP and HTTPS endpoints are tested:
+
+| Value | Behavior |
+| --- | --- |
+| `Auto` | Default. Tests Direct and each distinct enabled proxy discovered from environment variables, Windows Settings, and WinHTTP. |
+| `Direct` | Explicitly bypasses configured HTTP proxies. Transparent interception can still affect this route. |
+| `Environment` | Uses `HTTP_PROXY`, `HTTPS_PROXY`, or `ALL_PROXY`, with `NO_PROXY` bypasses. |
+| `CurrentUser` | Uses the enabled current-user Windows proxy, including manual settings and PAC/WPAD resolution. |
+| `WinHTTP` | Uses the machine WinHTTP default proxy. |
+
+Each endpoint produces a separate row per tested route. `ConnectionMethod`, `ProxyAddress`, `ProxyBypassed`, and `ProxyError` identify how it was tested. Proxy rows test connectivity to the proxy before requesting the destination; they do not require direct DNS or TCP connectivity to the destination.
+
+```powershell
+.\Get-IntuneNetworkRequirements.ps1 -CustomURLFile .\INRCustomList.csv -TrustMeBro -ProxyMode Auto -OutputCSV
+```
+
+```powershell
+.\Get-IntuneNetworkRequirements.ps1 -UseMSJSON -Intune -ProxyMode WinHTTP -OutputCSV
+```
+
+HTTP proxy authentication is not attempted. A `407` response is retained as diagnostic output. HTTP proxies cannot carry the script's UDP, NTP, DNS-server, or machine-local listener checks, so those checks remain direct-only and are skipped in proxy-only routes.
+
+Transparent products can intercept traffic without exposing a configured proxy address. For example, mitmproxy Local Capture uses low-level operating-system redirection and does not appear in Windows Settings, WinHTTP, or proxy environment variables. INR reports that connection as `Direct`, while the presented TLS issuer and `SSLInterception` fields reveal the interception. Route configuration and observed TLS interception are intentionally separate concepts.
+
+### TLS Inspection Results
+
+`KnownCRL` and `SSLInterception` describe different observations:
+
+| Field | Meaning |
+| --- | --- |
+| `KnownCRL` | The certificate references a CRL or AIA host found in the Microsoft endpoint data or the custom URL list. This is supporting certificate metadata, not proof that the certificate is genuine. |
+| `SSLInterception` | INR's final indication that the presented certificate was substituted or otherwise appears intercepted. |
+
+When both Direct and proxy routes present certificates, INR compares their certificate thumbprints. A different proxy certificate is reported as `SSLInterception = True` and `KnownCRL = False`, even if the proxy copied a legitimate CRL or AIA URL into its generated certificate. If no direct certificate is available for comparison, INR falls back to the certificate's CRL and AIA metadata.
+
+A failed certificate validation can still expose the presented issuer and interception result. In that case, `SSLTest` remains `False`, while `AuthException` explains the validation failure and `SSLInterception` can still be `True`.
+
 ## URL Sources
 
 | Parameter | Source |
@@ -196,6 +235,7 @@ Products are separate from `-TestAllServiceAreas` and require the corresponding 
 | `-MaxDelayInMS` | Maximum TCP response delay. The default is 300 ms. |
 | `-BurstMode` | Repeats TCP checks in 50 ms increments up to `MaxDelayInMS`. |
 | `-BrienMode` | Runs the selected tests repeatedly and compares the two latest results. A value of 2 is recommended. |
+| `-ProxyMode` | Selects `Auto`, `Direct`, `Environment`, `CurrentUser`, or `WinHTTP` routing. The default is `Auto`. |
 
 ## Output
 
@@ -217,3 +257,5 @@ Use `-MergeResults` with two CSV filenames to compare runs. Add `-MergeShowAllRe
 ```
 
 When filenames are omitted, the script attempts to select the two latest result files automatically.
+
+Comparisons match rows by endpoint and `ConnectionMethod`. A proxy route present in only one run is reported as `OnlyInFirst` or `OnlyInSecond` rather than causing a row-count error.

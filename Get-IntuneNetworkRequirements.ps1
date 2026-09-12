@@ -121,6 +121,9 @@ Will use the MaxDelayInMs, divide it into 50ms chunks and then do a quick test. 
 This mode allows you to run the script multiple times in succession and automatically merge the results. This can be used to 
 change network settings in between running the script with the same parameters. The last two results will be compared. Recommended
 value: 2
+.PARAMETER ProxyMode
+Controls which connection routes are tested. Auto tests a direct connection and every distinct proxy detected from environment variables,
+Windows Settings, and WinHTTP. Direct bypasses configured proxies. CurrentUser, WinHTTP, and Environment test only that source.
 .PARAMETER MergeResults
 Will trigger the result merge path. If two CSV files are in the working directory, it will merge those. Otherwise use -MergeCSVs.
 .PARAMETER MergeShowAllResults
@@ -358,6 +361,14 @@ param(
     [Parameter(ParameterSetName = 'TrustMeBroOnly')]
     [int]$BrienMode,
 
+    [Parameter(ParameterSetName = 'AllAreas')]
+    [Parameter(ParameterSetName = 'TestMSJSON')]
+    [Parameter(ParameterSetName = 'TestMS365JSON')]
+    [Parameter(ParameterSetName = 'TestCustom')]
+    [Parameter(ParameterSetName = 'TrustMeBroOnly')]
+    [ValidateSet('Auto', 'Direct', 'CurrentUser', 'WinHTTP', 'Environment')]
+    [string]$ProxyMode = 'Auto',
+
     #Merge options
     [Parameter(ParameterSetName = 'Merge', Position = 0)]
     [Parameter(ParameterSetName = 'TestMSJSON')]
@@ -422,6 +433,290 @@ function Get-ScriptPath {
     }
     $Script:PathToScript = $ScriptRoot
 }
+function ConvertTo-ProxyUri {
+    param(
+        [string]$ProxyList,
+        [ValidateSet('http', 'https')]
+        [string]$Scheme = 'https'
+    )
+    if ([string]::IsNullOrWhiteSpace($ProxyList)) {
+        return $null
+    }
+    $ProxyValue = $null
+    foreach ($Entry in $ProxyList -split ';') {
+        $Entry = $Entry.Trim()
+        if ($Entry -match '^(?<Scheme>https?|socks|socks4|socks5)=(?<Proxy>.+)$') {
+            if ($Matches.Scheme -eq $Scheme) {
+                $ProxyValue = $Matches.Proxy
+                break
+            }
+        } elseif (-not($ProxyValue)) {
+            $ProxyValue = $Entry
+        }
+    }
+    if ([string]::IsNullOrWhiteSpace($ProxyValue)) {
+        return $null
+    }
+    if ($ProxyValue -notmatch '^[a-z][a-z0-9+.-]*://') {
+        $ProxyValue = "http://$ProxyValue"
+    }
+    try {
+        $ProxyUri = [uri]$ProxyValue
+        if ($ProxyUri.Scheme -notin 'http', 'https') {
+            Write-Log -Message "Ignoring unsupported $($ProxyUri.Scheme) proxy '$ProxyValue'" -Component 'ProxyDiscovery' -Type 2
+            return $null
+        }
+        return $ProxyUri
+    } catch {
+        Write-Log -Message "Ignoring invalid proxy value '$ProxyValue'" -Component 'ProxyDiscovery' -Type 2
+        return $null
+    }
+}
+function Test-ProxyBypass {
+    param(
+        [uri]$TargetUri,
+        [string]$BypassList
+    )
+    if ([string]::IsNullOrWhiteSpace($BypassList)) {
+        return $false
+    }
+    foreach ($Entry in $BypassList -split '[;,]') {
+        $Pattern = $Entry.Trim()
+        if (-not($Pattern)) {
+            continue
+        }
+        if ($Pattern -eq '<local>' -and $TargetUri.Host -notmatch '\.') {
+            return $true
+        }
+        $Pattern = $Pattern -replace '^\.?\*', '*'
+        if ($TargetUri.Host -like $Pattern -or $TargetUri.AbsoluteUri -like $Pattern) {
+            return $true
+        }
+    }
+    return $false
+}
+function Get-EnvironmentProxyConfiguration {
+    param([ValidateSet('http', 'https')][string]$Scheme = 'https')
+    $ProxyValue = $null
+    $ProxyVariable = $null
+    foreach ($Name in @("$($Scheme.ToUpperInvariant())_PROXY", 'ALL_PROXY')) {
+        foreach ($Scope in @('Process', 'User', 'Machine')) {
+            $Value = [Environment]::GetEnvironmentVariable($Name, $Scope)
+            if ($Value) {
+                $ProxyValue = $Value
+                $ProxyVariable = "$Name ($Scope)"
+                break
+            }
+        }
+        if ($ProxyValue) {
+            break
+        }
+    }
+    if (-not($ProxyValue)) {
+        return $null
+    }
+    $NoProxy = $null
+    foreach ($Scope in @('Process', 'User', 'Machine')) {
+        $NoProxy = [Environment]::GetEnvironmentVariable('NO_PROXY', $Scope)
+        if ($NoProxy) {
+            break
+        }
+    }
+    [PSCustomObject]@{
+        Source       = 'Environment'
+        ProxyUri     = ConvertTo-ProxyUri -ProxyList $ProxyValue -Scheme $Scheme
+        BypassList   = $NoProxy
+        Configuration = $ProxyVariable
+    }
+}
+function Get-WindowsProxyConfigurations {
+    if (-not('INR.NativeProxy' -as [type])) {
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+
+namespace INR {
+    public static class NativeProxy {
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct IEProxyConfig {
+            [MarshalAs(UnmanagedType.Bool)] public bool AutoDetect;
+            public IntPtr AutoConfigUrl;
+            public IntPtr Proxy;
+            public IntPtr ProxyBypass;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+        private struct ProxyInfo {
+            public int AccessType;
+            public IntPtr Proxy;
+            public IntPtr ProxyBypass;
+        }
+
+        [DllImport("winhttp.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool WinHttpGetIEProxyConfigForCurrentUser(out IEProxyConfig config);
+
+        [DllImport("winhttp.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        private static extern bool WinHttpGetDefaultProxyConfiguration(out ProxyInfo config);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GlobalFree(IntPtr memory);
+
+        private static string ReadAndFree(IntPtr value) {
+            if (value == IntPtr.Zero) return null;
+            string result = Marshal.PtrToStringUni(value);
+            GlobalFree(value);
+            return result;
+        }
+
+        public static string[] GetCurrentUser() {
+            IEProxyConfig config;
+            if (!WinHttpGetIEProxyConfigForCurrentUser(out config)) return null;
+            return new[] {
+                ReadAndFree(config.Proxy),
+                ReadAndFree(config.ProxyBypass),
+                ReadAndFree(config.AutoConfigUrl),
+                config.AutoDetect.ToString()
+            };
+        }
+
+        public static string[] GetWinHttp() {
+            ProxyInfo config;
+            if (!WinHttpGetDefaultProxyConfiguration(out config)) return null;
+            return new[] { ReadAndFree(config.Proxy), ReadAndFree(config.ProxyBypass) };
+        }
+    }
+}
+'@
+    }
+    $CurrentUser = [INR.NativeProxy]::GetCurrentUser()
+    $WinHttp = [INR.NativeProxy]::GetWinHttp()
+    [PSCustomObject]@{
+        CurrentUser = if ($CurrentUser) {
+            [PSCustomObject]@{
+                Source        = 'CurrentUser'
+                ProxyList     = $CurrentUser[0]
+                BypassList    = $CurrentUser[1]
+                AutoConfigUrl = $CurrentUser[2]
+                AutoDetect    = $CurrentUser[3] -eq 'True'
+            }
+        } else { $null }
+        WinHTTP = if ($WinHttp) {
+            [PSCustomObject]@{
+                Source     = 'WinHTTP'
+                ProxyList  = $WinHttp[0]
+                BypassList = $WinHttp[1]
+            }
+        } else { $null }
+    }
+}
+function Get-ProxyRoutes {
+    param(
+        [uri]$TargetUri,
+        [ValidateSet('Auto', 'Direct', 'CurrentUser', 'WinHTTP', 'Environment')]
+        [string]$Mode = $ProxyMode
+    )
+    $Routes = [System.Collections.Generic.List[object]]::new()
+    if ($Mode -in 'Auto', 'Direct') {
+        $Routes.Add([PSCustomObject]@{
+            ConnectionMethod = 'Direct'
+            ProxyAddress     = $null
+            ProxyBypassed    = $false
+            Configuration    = 'Explicit direct connection'
+        })
+    }
+    $Scheme = if ($TargetUri.Scheme -eq 'http') { 'http' } else { 'https' }
+    $WindowsProxy = if ($Mode -in 'Auto', 'CurrentUser', 'WinHTTP') { Get-WindowsProxyConfigurations } else { $null }
+    $Configurations = @()
+    if ($Mode -in 'Auto', 'Environment') {
+        $EnvironmentProxy = Get-EnvironmentProxyConfiguration -Scheme $Scheme
+        if ($EnvironmentProxy) {
+            $Configurations += $EnvironmentProxy
+        }
+    }
+    if ($Mode -in 'Auto', 'CurrentUser' -and $WindowsProxy.CurrentUser) {
+        $CurrentUserProxyUri = ConvertTo-ProxyUri -ProxyList $WindowsProxy.CurrentUser.ProxyList -Scheme $Scheme
+        if (-not($CurrentUserProxyUri) -and ($WindowsProxy.CurrentUser.AutoConfigUrl -or $WindowsProxy.CurrentUser.AutoDetect)) {
+            try {
+                $ResolvedProxyUri = [System.Net.WebRequest]::GetSystemWebProxy().GetProxy($TargetUri)
+                if ($ResolvedProxyUri -and $ResolvedProxyUri.AbsoluteUri -ne $TargetUri.AbsoluteUri) {
+                    $CurrentUserProxyUri = $ResolvedProxyUri
+                }
+            } catch {
+                Write-Log -Message "Current-user automatic proxy resolution failed for $TargetUri`: $($_.Exception.Message)" -Component 'ProxyDiscovery' -Type 2
+            }
+        }
+        $Configurations += [PSCustomObject]@{
+            Source        = 'CurrentUser'
+            ProxyUri      = $CurrentUserProxyUri
+            BypassList    = $WindowsProxy.CurrentUser.BypassList
+            Configuration = if ($WindowsProxy.CurrentUser.AutoConfigUrl) { "PAC: $($WindowsProxy.CurrentUser.AutoConfigUrl)" } elseif ($WindowsProxy.CurrentUser.AutoDetect) { 'WPAD enabled' } else { 'Windows Settings' }
+        }
+    }
+    if ($Mode -in 'Auto', 'WinHTTP' -and $WindowsProxy.WinHTTP) {
+        $Configurations += [PSCustomObject]@{
+            Source        = 'WinHTTP'
+            ProxyUri      = ConvertTo-ProxyUri -ProxyList $WindowsProxy.WinHTTP.ProxyList -Scheme $Scheme
+            BypassList    = $WindowsProxy.WinHTTP.BypassList
+            Configuration = 'WinHTTP default proxy'
+        }
+    }
+    $RouteKeys = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
+    foreach ($Configuration in $Configurations) {
+        if (-not($Configuration.ProxyUri)) {
+            continue
+        }
+        $ProxyBypassed = Test-ProxyBypass -TargetUri $TargetUri -BypassList $Configuration.BypassList
+        $RouteKey = "$($Configuration.ProxyUri.AbsoluteUri.TrimEnd('/'))|$ProxyBypassed"
+        if ($Mode -eq 'Auto' -and -not($RouteKeys.Add($RouteKey))) {
+            Write-Log -Message "Skipping duplicate $($Configuration.Source) proxy route $($Configuration.ProxyUri)" -Component 'ProxyDiscovery'
+            continue
+        }
+        $Routes.Add([PSCustomObject]@{
+            ConnectionMethod = $Configuration.Source
+            ProxyAddress     = $Configuration.ProxyUri.AbsoluteUri.TrimEnd('/')
+            ProxyBypassed    = $ProxyBypassed
+            Configuration    = $Configuration.Configuration
+        })
+    }
+    if (-not($Routes.Count)) {
+        throw "ProxyMode '$Mode' did not resolve to an available proxy configuration for $TargetUri."
+    }
+    return $Routes
+}
+function Invoke-RoutedWebRequest {
+    param(
+        [uri]$Uri,
+        [ValidateSet('Get', 'Head')]
+        [string]$Method = 'Get',
+        [switch]$SkipHttpErrorCheck
+    )
+    $Errors = [System.Collections.Generic.List[string]]::new()
+    foreach ($Route in Get-ProxyRoutes -TargetUri $Uri) {
+        $Parameters = @{
+            Uri                      = $Uri
+            Method                   = $Method
+            ConnectionTimeoutSeconds = [Math]::Max(1, [Math]::Ceiling($MaxDelayInMS / 100))
+        }
+        if ($SkipHttpErrorCheck) {
+            $Parameters.SkipHttpErrorCheck = $true
+        }
+        if ($Route.ConnectionMethod -eq 'Direct' -or $Route.ProxyBypassed) {
+            $Parameters.NoProxy = $true
+        } else {
+            $Parameters.Proxy = $Route.ProxyAddress
+        }
+        try {
+            return [PSCustomObject]@{
+                Response = Invoke-WebRequest @Parameters
+                Route    = $Route
+            }
+        } catch {
+            $Errors.Add("$($Route.ConnectionMethod): $($_.Exception.Message)")
+            Write-Log -Message "Request to $Uri failed using $($Route.ConnectionMethod): $($_.Exception.Message)" -Component 'RoutedWebRequest' -Type 2
+        }
+    }
+    throw "Request to $Uri failed using every selected route: $($Errors -join '; ')"
+}
 function Initialize-Script {
     <#
     .SYNOPSIS
@@ -471,8 +766,13 @@ function Initialize-Script {
         Get-Variable FinalResultList | Clear-Variable 
     }
     $Script:FinalResultList = [System.Collections.ArrayList]::new()
-    $Script:ExternalIP = (ConvertFrom-Json (Invoke-WebRequest "https://geo-prod.do.dsp.mp.microsoft.com/geo")).ExternalIpAddress
-    Write-Log -Message "External IP: $($Script:ExternalIP)" -Component 'InitializeScript'
+    try {
+        $ExternalIPRequest = Invoke-RoutedWebRequest -Uri 'https://geo-prod.do.dsp.mp.microsoft.com/geo'
+        $Script:ExternalIP = (ConvertFrom-Json $ExternalIPRequest.Response.Content).ExternalIpAddress
+        Write-Log -Message "External IP: $($Script:ExternalIP) (via $($ExternalIPRequest.Route.ConnectionMethod))" -Component 'InitializeScript'
+    } catch {
+        Write-Log -Message "External IP lookup failed: $($_.Exception.Message)" -Component 'InitializeScript' -Type 2
+    }
     #Initialize custom Script variables
     Import-CustomURLFile
     if ($UseMSJSON) {
@@ -597,6 +897,7 @@ function Write-SettingsToLog {
         WorkingDirectory: $WorkingDirectory
         LogDirectory: $LogDirectory
         BrienMode: $BrienMode
+        ProxyMode: $ProxyMode
         ScriptPath: $($Script:PathToScript)
         LogFile: $($Script:LogFile)" -Component 'InitialzeScript'
 }
@@ -728,13 +1029,16 @@ function Get-M365Service {
     #if (Test-HTTP -URL $EndpointURL) {
     if ($M365) {
         Write-Log 'Adding Microsoft URLs to the pool from service area M365' -Component 'GetM365URLs'
-        if ($Tenantname) { $URLs = Invoke-RestMethod -Uri ("$EndpointURL/endpoints/WorldWide?clientrequestid=$Script:GUID&TenantName=$Tenantname") }
-        else { $URLs = Invoke-RestMethod -Uri ("$EndpointURL/endpoints/WorldWide?clientrequestid=$Script:GUID") }
+        if ($Tenantname) { $RequestUri = "$EndpointURL/endpoints/WorldWide?clientrequestid=$Script:GUID&TenantName=$Tenantname" }
+        else { $RequestUri = "$EndpointURL/endpoints/WorldWide?clientrequestid=$Script:GUID" }
     }
     if ($MEM) {
         Write-Log 'Adding Microsoft URLs to the pool from service area MEM' -Component 'GetM365URLs'
-        $URLs = Invoke-RestMethod -Uri ("$EndpointURL/endpoints/WorldWide?ServiceAreas=MEM`&`clientrequestid=$($Script:GUID)")
+        $RequestUri = "$EndpointURL/endpoints/WorldWide?ServiceAreas=MEM`&`clientrequestid=$($Script:GUID)"
     }
+    $EndpointRequest = Invoke-RoutedWebRequest -Uri $RequestUri
+    $URLs = $EndpointRequest.Response.Content | ConvertFrom-Json
+    Write-Log -Message "Microsoft endpoint data downloaded via $($EndpointRequest.Route.ConnectionMethod)" -Component 'GetM365URLs'
     foreach ($Object in $URLs) {
         $Ports = [array](($(if ($Object.tcpPorts) { $Object.tcpPorts }elseif ($Object.udpPorts) { $Object.udpPorts }else { '443' })).split(",").trim())
         $Protocol = $(if ($Object.tcpPorts) { 'TCP' } elseif ($Object.udpPorts) { 'UDP' } else { 'TCP' })
@@ -780,7 +1084,15 @@ function Test-SSLInspectionByKnownCRLs {
         [string]$CRLURL,
         [string]$VerifyAgainstKnownGood
     )
-    $KnownCRL = $false
+    $Candidate = if ($CRLURL) { $CRLURL } else { $VerifyAgainstKnownGood }
+    if ([string]::IsNullOrWhiteSpace($Candidate)) {
+        return $false
+    }
+    try {
+        $CandidateHost = if ($Candidate -match '^[a-z][a-z0-9+.-]*://') { ([uri]$Candidate).Host } else { ([uri]"http://$Candidate").Host }
+    } catch {
+        return $false
+    }
     if (-not($Script:CRLURLsToCheck)) {
         if ($Script:ManualURLs) {
             $Script:ManualURLs | Where-Object { $_.id -in "125", "84", "9993" } | ForEach-Object { $Script:CRLURLsToCheck.add($_) | Out-Null }
@@ -790,11 +1102,19 @@ function Test-SSLInspectionByKnownCRLs {
         }
     }
     foreach ($URL in $Script:CRLURLsToCheck.url) {
-        if ($CRLURL -like $("*" + $URL + "*") -or $VerifyAgainstKnownGood -eq $URL) {
-            $KnownCRL = $true
+        $KnownValue = "$URL".Trim()
+        $IsWildcard = $KnownValue.StartsWith('*.')
+        $KnownValue = $KnownValue -replace '^\*\.', ''
+        try {
+            $KnownHost = if ($KnownValue -match '^[a-z][a-z0-9+.-]*://') { ([uri]$KnownValue).Host } else { ([uri]"http://$KnownValue").Host }
+        } catch {
+            continue
+        }
+        if ($CandidateHost -ieq $KnownHost -or ($IsWildcard -and $CandidateHost.EndsWith(".$KnownHost", [StringComparison]::OrdinalIgnoreCase))) {
+            return $true
         }
     }
-    return $KnownCRL
+    return $false
 }
 function Test-SSL {
     <#
@@ -805,10 +1125,76 @@ function Test-SSL {
     #>
     param(
         $SSLTarget, 
-        $SSLPort = 443
+        $SSLPort = 443,
+        [string]$ProxyAddress
     )
-    $TCPSocket = New-Object Net.Sockets.TcpClient($SSLTarget, $SSLPort)
-    $SSLStream = New-Object -TypeName Net.Security.SslStream($TCPSocket.GetStream(), $false)
+    $SSLTest = $false
+    $SSLProtocol = $null
+    $Issuer = $null
+    $AuthException = $null
+    $KnownCRL = $null
+    $SSLInspectionResult = $null
+    $CertInfo = $null
+    $ConnectTarget = $SSLTarget
+    $ConnectPort = $SSLPort
+    if ($ProxyAddress) {
+        $ProxyUri = [uri]$ProxyAddress
+        $ConnectTarget = $ProxyUri.Host
+        $ConnectPort = $ProxyUri.Port
+    }
+    try {
+        $TCPSocket = New-Object Net.Sockets.TcpClient($ConnectTarget, $ConnectPort)
+        $NetworkStream = $TCPSocket.GetStream()
+        if ($ProxyAddress) {
+            $ConnectRequest = "CONNECT $($SSLTarget):$SSLPort HTTP/1.1`r`nHost: $($SSLTarget):$SSLPort`r`nProxy-Connection: Keep-Alive`r`n`r`n"
+            $ConnectBytes = [Text.Encoding]::ASCII.GetBytes($ConnectRequest)
+            $NetworkStream.Write($ConnectBytes, 0, $ConnectBytes.Length)
+            $ResponseBytes = [System.Collections.Generic.List[byte]]::new()
+            $Terminator = [Text.Encoding]::ASCII.GetBytes("`r`n`r`n")
+            while ($ResponseBytes.Count -lt 16384) {
+                $NextByte = $NetworkStream.ReadByte()
+                if ($NextByte -lt 0) {
+                    break
+                }
+                $ResponseBytes.Add([byte]$NextByte)
+                if ($ResponseBytes.Count -ge 4) {
+                    $Offset = $ResponseBytes.Count - 4
+                    if ($ResponseBytes[$Offset] -eq $Terminator[0] -and $ResponseBytes[$Offset + 1] -eq $Terminator[1] -and $ResponseBytes[$Offset + 2] -eq $Terminator[2] -and $ResponseBytes[$Offset + 3] -eq $Terminator[3]) {
+                        break
+                    }
+                }
+            }
+            $ConnectResponse = [Text.Encoding]::ASCII.GetString($ResponseBytes.ToArray())
+            if ($ConnectResponse -notmatch '^HTTP/\d(?:\.\d)? 2\d\d') {
+                $ProxyStatusCode = if ($ConnectResponse -match '^HTTP/\d(?:\.\d)? (?<Status>\d{3})') { [int]$Matches.Status } else { $null }
+                throw "Proxy CONNECT failed$(if ($ProxyStatusCode) { " with HTTP $ProxyStatusCode" })"
+            }
+        }
+        $CertificateCapture = [PSCustomObject]@{
+            Certificate = $null
+            ChainStatus = $null
+        }
+        $CertificateValidationCallback = [Net.Security.RemoteCertificateValidationCallback]{
+            param($Sender, $Certificate, $Chain, $PolicyErrors)
+            $CertificateCapture.Certificate = if ($Certificate) { [Security.Cryptography.X509Certificates.X509Certificate2]::new($Certificate) } else { $null }
+            $CertificateCapture.ChainStatus = @($Chain.ChainStatus | ForEach-Object { $_.Status.ToString() }) -join ', '
+            return $PolicyErrors -eq [Net.Security.SslPolicyErrors]::None
+        }
+        $SSLStream = [Net.Security.SslStream]::new($NetworkStream, $false, $CertificateValidationCallback)
+    } catch {
+        if ($TCPSocket) {
+            $TCPSocket.Dispose()
+        }
+        return [PSCustomObject]@{
+            SSLTest         = $false
+            SSLProtocol     = $null
+            Issuer          = $null
+            Thumbprint      = $null
+            AuthException   = $_.Exception.Message
+            KnownCRL        = $null
+            SSLInterception = $null
+        }
+    }
     try {
         $SSLStream.AuthenticateAsClient(
             $SSLTarget, #targetHost
@@ -818,11 +1204,14 @@ function Test-SSL {
     } catch [System.Security.Authentication.AuthenticationException] {
         #THIS ONLY WORKS IN PS7!!
         if ($PSVersionTable.psversion.major -ge 7) {
-            switch -Wildcard ($Error[0].Exception.InnerException.Message) {
+            $AuthenticationMessage = if ($_.Exception.InnerException) { $_.Exception.InnerException.Message } else { $_.Exception.Message }
+            switch -Wildcard ($AuthenticationMessage) {
                 "Cannot determine the frame size or a corrupted frame was received." { $AuthException = "FrameSizeOrCorrupted" }
                 "*TLS alert: 'HandshakeFailure'." { $AuthException = "HandshakeFailure" }
                 "*validation procedure: RemoteCertificateNameMismatch" { $AuthException = "RemoteCertificateNameMismatch" }
-                default { $AuthException = $Error[0].Exception.InnerException.Message.Split(':')[1].Trim() }
+                "*RevocationStatusUnknown*" { $AuthException = "RevocationStatusUnknown" }
+                "*RemoteCertificateValidationCallback*" { $AuthException = if ($CertificateCapture.ChainStatus) { $CertificateCapture.ChainStatus } else { $AuthenticationMessage } }
+                default { $AuthException = $AuthenticationMessage }
             } 
         } else {
             Write-Log -Message 'Cannot determine exact certificate failure, defaults to "failed"' -Component 'TestSSL' -Type 2
@@ -833,14 +1222,19 @@ function Test-SSL {
     }
     if ($SSLStream.IsAuthenticated) {
         $SSLTest = $true
-        $CertInfo = New-Object -TypeName Security.Cryptography.X509Certificates.X509Certificate2($SSLStream.RemoteCertificate)
+        $SSLProtocol = $SSLStream.SslProtocol
+    }
+    $CertInfo = $CertificateCapture.Certificate
+    if ($CertInfo) {
         if ($CertInfo.Thumbprint -and $CheckCertRevocation) {
             Write-Log -Message "Grabbing CRL for $SSLTarget and verify against known-good" -Component 'TestSSL'
-            $CRLURIarray = $CertInfo.Extensions |  Where-Object -FilterScript { $_.Oid.Value -eq '2.5.29.31' } | ForEach-Object -Process { $_.Oid.FriendlyName; $_.Format($true) }
-            $AIAURIArray = $CertInfo.Extensions |  Where-Object -FilterScript { $_.Oid.Value -eq '1.3.6.1.5.5.7.1.1' } | ForEach-Object -Process { $_.Oid.FriendlyName; $_.Format($true) }
+            $CRLText = $CertInfo.Extensions | Where-Object -FilterScript { $_.Oid.Value -eq '2.5.29.31' } | ForEach-Object -Process { $_.Format($true) }
+            $AIAText = $CertInfo.Extensions | Where-Object -FilterScript { $_.Oid.Value -eq '1.3.6.1.5.5.7.1.1' } | ForEach-Object -Process { $_.Format($true) }
+            $CRLURIs = @([regex]::Matches(($CRLText -join "`n"), 'https?://[^\s,\]\r\n]+', [Text.RegularExpressions.RegexOptions]::IgnoreCase) | ForEach-Object { $_.Value.TrimEnd('.') } | Sort-Object -Unique)
+            $AIAURIs = @([regex]::Matches(($AIAText -join "`n"), 'https?://[^\s,\]\r\n]+', [Text.RegularExpressions.RegexOptions]::IgnoreCase) | ForEach-Object { $_.Value.TrimEnd('.') } | Sort-Object -Unique)
             $SSLInspectionResult = $false
             $KnownCRL = $false
-            if (-not($CRLURIarray) -and -not($AIAURIArray)) {
+            if (-not($CRLURIs) -and -not($AIAURIs)) {
                 Write-Log "No CRL detected - SSL inspection is likely. Testing if tested URL $SSLTarget is a known address CRL itself" -Component 'TestSSL' -Type 2
                 $VerifyAgainstKnownGoodResult = Test-SSLInspectionByKnownCRLs -VerifyAgainstKnownGood $SSLTarget
                 if ($VerifyAgainstKnownGoodResult) {
@@ -851,25 +1245,22 @@ function Test-SSL {
                     Write-Log "SSL Inspection very likely. $SSLTarget is not a known CRL address" -Component 'TestSSL' -Type 2
                     $SSLInspectionResult = $true
                 }
-            } elseif ($CRLURIarray -and ($CRLURIarray[1].split('[').count -ge 2)) {
-                if ($CRLURIarray[1].split('[').count -eq 2) {
-                    $CRLURI = $CRLURIarray[1].Split('http://')[1].split('/')[0]
-                    Write-Log "Testing CRL URI: $CRLURI" -Component 'TestSSL'
-                    $KnownCRL = Test-SSLInspectionByKnownCRLs -CRLURL $CRLURI
-                } elseif ($CRLURIarray[1].split('[').count -gt 2) {
-                    Write-Log 'Multiple CRL URIs found - testing all' -Component 'TestSSL'
-                    $TestMultipleCRLs = $CRLURIarray[1].split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing CRL URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
-                    if ($TestMultipleCRLs) { $KnownCRL = $true }
+            } elseif ($CRLURIs) {
+                foreach ($CRLURI in $CRLURIs) {
+                    Write-Log "Testing CRL URI: $(([uri]$CRLURI).Host)" -Component 'TestSSL'
+                    if (Test-SSLInspectionByKnownCRLs -CRLURL $CRLURI) {
+                        $KnownCRL = $true
+                        break
+                    }
                 }
-            } elseif ($AIAURIArray -and ($AIAURIArray[1].split('[').count -ge 2)) {
+            } elseif ($AIAURIs) {
                 Write-Log 'No CRL found in certificate - testing AIA URI' -Component 'TestSSL' -Type 2
-                if ( $AIAURIArray[1].split('[').count -eq 2) {
-                    Write-Log "Testing AIA URI: $AIAURI" -Component 'TestSSL'
-                    $AIAURI = $AIAURIArray[1].Split('http://')[1].split('/')[0]
-                    $KnownCRL = Test-SSLInspectionByKnownCRLs -CRLURL $AIAURI
-                } elseif ($AIAURIArray[1].split('[').count -gt 2) {
-                    $TestMultipleAIA = $AIAURIArray[1].split('=').split('[').trim() | Where-Object { $_.startswith("http://") } | ForEach-Object { Write-Log "Testing AIA URI: $($_.Split('http://')[1].split('/')[0])" -Component 'TestSSL'; Test-SSLInspectionByKnownCRLs -CRLURL $_.Split('http://')[1].split('/')[0] } | Where-Object { $_ -contains $true }
-                    if ($TestMultipleAIA) { $KnownCRL = $true }
+                foreach ($AIAURI in $AIAURIs) {
+                    Write-Log "Testing AIA URI: $(([uri]$AIAURI).Host)" -Component 'TestSSL'
+                    if (Test-SSLInspectionByKnownCRLs -CRLURL $AIAURI) {
+                        $KnownCRL = $true
+                        break
+                    }
                 }
                 if ( -not($KnownCRL)) {
                     Write-Log "Unknown CRL or AIA. $SSLTarget's certificate didn't provide any known CRL/AIA address" -Component 'TestSSL' -Type 2
@@ -879,19 +1270,20 @@ function Test-SSL {
             }
         }
     }
-    $TCPSocket.Close()
-    $TCPSocket.Dispose()
     if ($null -eq $SSLTest) {
         $SSLTest = $false
     }
     $Result = [PSCustomObject]@{
         SSLTest         = $SSLTest
-        SSLProtocol     = $SSLStream.SslProtocol
+        SSLProtocol     = $SSLProtocol
         Issuer          = $CertInfo.Issuer
+        Thumbprint      = $CertInfo.Thumbprint
         AuthException   = $AuthException
         KnownCRL        = $KnownCRL
         SSLInterception = $SSLInspectionResult
     }
+    $SSLStream.Dispose()
+    $TCPSocket.Dispose()
     return $Result
 }
 
@@ -903,29 +1295,36 @@ function Test-HTTP {
     #>
     param(
         [string]$HTTPURL,
-        [int]$HTTPPort
+        [int]$HTTPPort,
+        [PSCustomObject]$Route
     )
     switch ($HTTPPort) {
         "80" { $URIStart = "http://" }
         "443" { $URIStart = "https://" }
         default { $URIStart = "https://" }
     }
+    $RequestParameters = @{
+        Uri                      = $URIStart + $HTTPURL
+        ConnectionTimeoutSeconds = [Math]::Max(1, [Math]::Ceiling($MaxDelayInMS / 100))
+        Method                   = 'Get'
+        SkipHttpErrorCheck       = $true
+    }
+    if ($Route.ConnectionMethod -eq 'Direct' -or $Route.ProxyBypassed) {
+        $RequestParameters.NoProxy = $true
+    } else {
+        $RequestParameters.Proxy = $Route.ProxyAddress
+    }
     try {
-        #MARKED FOR CLEANUP. Reason: PS5 only code.
-        #We could use -SkipHttpErrorCheck in PS7...
-        if ($PSVersionTable.psversion.major -ge 7) {
-            $HTTPiwr = Invoke-WebRequest -Uri $($URIStart + $HTTPURL) -ConnectionTimeoutSeconds $(($MaxDelayInMS / 100)) -Method Get -SkipHttpErrorCheck
-        } else {
-            $HTTPiwr = Invoke-WebRequest -Uri $($URIStart + $HTTPURL) -ConnectionTimeoutSeconds $(($MaxDelayInMS / 100)) -Method Get 
+        $HTTPiwr = Invoke-WebRequest @RequestParameters
+        return [PSCustomObject]@{
+            StatusCode = $HTTPiwr.StatusCode
+            Error      = $null
         }
-        return $HTTPiwr.StatusCode
     } catch {
-        #This is only reached if PS5 is used
-        $Statuscode = $error[0].Exception.Response.StatusCode.value__
-        if ($Statuscode) {
-            return $Statuscode
+        return [PSCustomObject]@{
+            StatusCode = if ($_.Exception.Response.StatusCode) { [int]$_.Exception.Response.StatusCode } else { $false }
+            Error      = $_.Exception.Message
         }
-        return $false
     }
 }
 function Test-DNS {
@@ -990,11 +1389,9 @@ function Test-TCPPort {
         }
     }
     if (-not($BurstMode)) {
-        if ($TCPTarget -in $Script:TCPCache.CachedURL -and $TCPPort -in ($Script:TCPCache.Port | Where-Object { $_.CachedURL -eq $TCPTarget })) {
-            $TCPCachedResult = $Script:TCPCache | Where-Object { $_.CachedURL -eq $TCPTarget } | Select-Object -Property result -First 1
-            if (-not($TCPCachedResult.result)) {
-                return $false
-            }
+        $TCPCachedResult = $Script:TCPCache | Where-Object { $_.CachedURL -eq $TCPTarget -and $_.Port -eq $TCPPort } | Select-Object -First 1
+        if ($TCPCachedResult) {
+            return $TCPCachedResult.Result
         }
     }
     $TCPClient = New-Object -TypeName System.Net.Sockets.TCPClient
@@ -1019,7 +1416,7 @@ function Test-TCPPort {
         $TCPObject = [PSCustomObject]@{
             CachedURL = $TCPTarget
             Port      = $TCPPort
-            Result    = $result
+            Result    = $success
         }
         $Script:TCPCache.add($TCPObject) | Out-Null
     }
@@ -1075,14 +1472,16 @@ function Test-TCPBurstMode {
     Will test a given URL in 50ms chunks (50,100,150...) until $MaxDelayInMS is reached.
     #>
     param(
-        $WorkObject
+        [string]$TCPTarget,
+        [int]$TCPPort,
+        [PSCustomObject]$ResultObject
     )
     $MinimumWaitTime = 50
     $AmountofTimes = [math]::floor([decimal]($MaxDelayInMS / $MinimumWaitTime))
     for ($i = 1; $i -lt $AmountofTimes + 1; $i++) {
         $MaxWaitTime = $($MinimumWaitTime * $i)
-        $TCPResult = Test-TCPPort -Target $WorkObject.url -Port $WorkObject.port -MaxWaitTime $MaxWaitTime
-        $WorkObject | Add-Member -MemberType NoteProperty -Name "TCP$MaxWaitTime" -Value $TCPResult
+        $TCPResult = Test-TCPPort -TCPTarget $TCPTarget -TCPPort $TCPPort -MaxWaitTime $MaxWaitTime
+        $ResultObject | Add-Member -MemberType NoteProperty -Name "TCP$MaxWaitTime" -Value $TCPResult
     }
 }
 function Test-Network {
@@ -1097,60 +1496,110 @@ function Test-Network {
         [PSCustomObject]$TestObject
     )
     Write-Log "Testing $($TestObject.url) on port $($TestObject.port)" -Component 'TestNetwork'
-    if ($TestObject -in $Script:FinalResultList) {
-        Write-Log 'This URL/Port was already tested' -Component 'TestNetwork'
-        return $true
-    }
-    $TestObject | Add-Member -Name 'DNSResult' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'TCPResult' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'HTTPStatusCode' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'SSLTest' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'SSLProtocol' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'Issuer' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'AuthException' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'KnownCRL' -MemberType NoteProperty -Value ""
-    $TestObject | Add-Member -Name 'SSLInterception' -MemberType NoteProperty -Value ""
-    $DNS = Test-DNS -DNSTarget $TestObject.url
-    $TestObject.DNSResult = $DNS
-    if ($DNS) {
-        if ($BurstMode) {
-            Test-TCPBurstMode -TCPTarget $TestObject.url
-        } else {
-            if ($TestObject.protocol -ne 'TCP') {
-                Write-Log 'This script can not test UDP ports - only NTP (see log for those results)' -Component 'TestNetwork' -Type 2
-            } else {
-                $TCP = Test-TCPPort -TCPTarget $TestObject.url -TCPPort $TestObject.port
-                $TestObject.TCPResult = $TCP
+    $TargetScheme = if ([int]$TestObject.port -eq 80) { 'http' } else { 'https' }
+    $Routes = Get-ProxyRoutes -TargetUri ([uri]"$TargetScheme`://$($TestObject.url):$($TestObject.port)")
+    $DirectCertificateThumbprint = $null
+    foreach ($Route in $Routes) {
+        $TCP = $false
+        if ($TestObject.protocol -ne 'TCP' -and $Route.ConnectionMethod -ne 'Direct') {
+            Write-Log "Skipping $($Route.ConnectionMethod) for $($TestObject.url): HTTP proxies cannot test $($TestObject.protocol) traffic" -Component 'TestNetwork' -Type 2
+            continue
+        }
+        if ($Script:FinalResultList | Where-Object { $_.url -eq $TestObject.url -and $_.port -eq $TestObject.port -and $_.ConnectionMethod -eq $Route.ConnectionMethod }) {
+            Write-Log "This URL/Port was already tested using $($Route.ConnectionMethod)" -Component 'TestNetwork'
+            continue
+        }
+        $ResultObject = [PSCustomObject]@{}
+        foreach ($Property in $TestObject.PSObject.Properties) {
+            if ($Property.Name -notin 'DNSResult', 'TCPResult', 'HTTPStatusCode', 'SSLTest', 'SSLProtocol', 'Issuer', 'AuthException', 'KnownCRL', 'SSLInterception', 'ConnectionMethod', 'ProxyAddress', 'ProxyBypassed', 'ProxyError') {
+                $ResultObject | Add-Member -Name $Property.Name -MemberType NoteProperty -Value $Property.Value
             }
-            if ($TCP) {
-                #Test HTTP(s) Connections
-                $HTTPStatuscode = Test-HTTP -HTTPURL $TestObject.url -HTTPPort $TestObject.port
-                if ($null -ne $HTTPStatuscode) {
-                    $TestObject.HTTPStatusCode = $HTTPStatuscode
-                } else { 
-                    $TestObject.HTTPStatusCode = $false 
+        }
+        $ResultObject | Add-Member -Name 'ConnectionMethod' -MemberType NoteProperty -Value $Route.ConnectionMethod
+        $ResultObject | Add-Member -Name 'ProxyAddress' -MemberType NoteProperty -Value $Route.ProxyAddress
+        $ResultObject | Add-Member -Name 'ProxyBypassed' -MemberType NoteProperty -Value $Route.ProxyBypassed
+        $ResultObject | Add-Member -Name 'ProxyError' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'DNSResult' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'TCPResult' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'HTTPStatusCode' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'SSLTest' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'SSLProtocol' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'Issuer' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'AuthException' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'KnownCRL' -MemberType NoteProperty -Value ''
+        $ResultObject | Add-Member -Name 'SSLInterception' -MemberType NoteProperty -Value ''
+        $ConnectionTarget = if ($Route.ConnectionMethod -eq 'Direct' -or $Route.ProxyBypassed) { $TestObject.url } else { ([uri]$Route.ProxyAddress).Host }
+        $ConnectionPort = if ($Route.ConnectionMethod -eq 'Direct' -or $Route.ProxyBypassed) { [int]$TestObject.port } else { ([uri]$Route.ProxyAddress).Port }
+        $ProxyHostIsIPAddress = $null
+        if ($Route.ConnectionMethod -ne 'Direct' -and -not($Route.ProxyBypassed)) {
+            $ProxyHostIsIPAddress = [Net.IPAddress]::TryParse($ConnectionTarget, [ref]$null)
+        }
+        $DNS = if ($ProxyHostIsIPAddress) { $true } else { Test-DNS -DNSTarget $ConnectionTarget }
+        $ResultObject.DNSResult = $DNS
+        if (-not($DNS) -and $Route.ConnectionMethod -ne 'Direct' -and -not($Route.ProxyBypassed)) {
+            $ResultObject.ProxyError = "Proxy host $ConnectionTarget could not be resolved"
+        }
+        if ($DNS) {
+            if ($BurstMode) {
+                Test-TCPBurstMode -TCPTarget $ConnectionTarget -TCPPort $ConnectionPort -ResultObject $ResultObject
+            } else {
+                if ($TestObject.protocol -ne 'TCP') {
+                    Write-Log 'This script can not test UDP ports - only NTP (see log for those results)' -Component 'TestNetwork' -Type 2
+                } else {
+                    $TCP = Test-TCPPort -TCPTarget $ConnectionTarget -TCPPort $ConnectionPort
+                    $ResultObject.TCPResult = $TCP
                 }
-                #Test TLS and verify everything around the cert including traffic interception
-                $SSLTest = Test-SSL -SSLTarget $TestObject.url -SSLPort $TestObject.port
-                $TestObject.SSlTest = $SSLTest.SSLTest
-
-                if ($SSLTest.SSLTest) {
-                    $TestObject.SSLProtocol = $SSLTest.SSLProtocol
-                    $TestObject.Issuer = $SSLTest.Issuer
+                if (-not($TCP) -and $Route.ConnectionMethod -ne 'Direct' -and -not($Route.ProxyBypassed)) {
+                    $ResultObject.ProxyError = "Proxy $ConnectionTarget`:$ConnectionPort did not accept a TCP connection"
+                }
+                if ($TCP) {
+                    #Test HTTP(s) Connections
+                    $HTTPResult = Test-HTTP -HTTPURL $TestObject.url -HTTPPort $TestObject.port -Route $Route
+                    if ($null -ne $HTTPResult.StatusCode) {
+                        $ResultObject.HTTPStatusCode = $HTTPResult.StatusCode
+                    } else {
+                        $ResultObject.HTTPStatusCode = $false
+                    }
+                    if ($HTTPResult.Error -and $Route.ConnectionMethod -ne 'Direct') {
+                        $ResultObject.ProxyError = $HTTPResult.Error
+                    }
+                    #Test TLS and verify everything around the cert including traffic interception
+                    $SSLParameters = @{
+                        SSLTarget = $TestObject.url
+                        SSLPort   = $TestObject.port
+                    }
+                    if ($Route.ConnectionMethod -ne 'Direct' -and -not($Route.ProxyBypassed)) {
+                        $SSLParameters.ProxyAddress = $Route.ProxyAddress
+                    }
+                    $SSLTest = Test-SSL @SSLParameters
+                    if ($SSLTest.Thumbprint -and $Route.ConnectionMethod -eq 'Direct') {
+                        $DirectCertificateThumbprint = $SSLTest.Thumbprint
+                    } elseif ($SSLTest.Thumbprint -and $DirectCertificateThumbprint -and $SSLTest.Thumbprint -ne $DirectCertificateThumbprint) {
+                        Write-Log "Certificate presented through $($Route.ConnectionMethod) differs from the direct route; TLS interception detected" -Component 'TestSSL' -Type 2
+                        $SSLTest.KnownCRL = $false
+                        $SSLTest.SSLInterception = $true
+                    }
+                    $ResultObject.SSLTest = $SSLTest.SSLTest
+                    if ($SSLTest.SSLProtocol) {
+                        $ResultObject.SSLProtocol = $SSLTest.SSLProtocol
+                    }
+                    if ($SSLTest.Issuer) {
+                        $ResultObject.Issuer = $SSLTest.Issuer
+                    }
                     if ($SSLTest.AuthException) {
-                        $TestObject.AuthException = $SSLTest.AuthException
+                        $ResultObject.AuthException = $SSLTest.AuthException
                     }
                     if ($null -ne $SSLTest.KnownCRL) {
-                        $TestObject.KnownCRL = $SSLTest.KnownCRL
+                        $ResultObject.KnownCRL = $SSLTest.KnownCRL
                     }      
                     if ($null -ne $SSLTest.SSLInterception) {
-                        $TestObject.SSLInterception = $SSLTest.SSLInterception
+                        $ResultObject.SSLInterception = $SSLTest.SSLInterception
                     }
-                }
             }
         }
     }
-    $Script:FinalResultList.add($TestObject) | Out-Null
+        $Script:FinalResultList.add($ResultObject) | Out-Null
+    }
 }
 
 #Artificial Service Areas
@@ -1159,7 +1608,6 @@ function Test-DNSServers {
     .SYNOPSIS
     This will test a mixture of public DNS servers.
     .NOTES
-    ServiceIDs 999
     #>
     $ServiceIDs = 999
     $ServiceArea = "DNSServer"
@@ -1356,8 +1804,13 @@ function Test-Android {
     Write-Log "Testing Service Area $ServiceArea" -Component "Test$ServiceArea"
 
     Write-Log 'Testing Android connectivity check' -Component "Test$ServiceArea"
-    $AndroidConnectivity = Invoke-WebRequest -Uri https://www.google.com/generate_204
-    if ($AndroidConnectivity.StatusCode -ne 204) {
+    try {
+        $AndroidConnectivity = Invoke-RoutedWebRequest -Uri 'https://www.google.com/generate_204' -SkipHttpErrorCheck
+    } catch {
+        Write-Log "Android connectivity check failed: $($_.Exception.Message)" -Component "Test$ServiceArea" -Type 2
+        return $false
+    }
+    if ($AndroidConnectivity.Response.StatusCode -ne 204) {
         Write-Log 'Android connectivity check failed - not testing any other addresses' -Component "Test$ServiceArea"
         return $false
     }
@@ -1964,6 +2417,14 @@ function Test-NuGet {
     }
     return $true
 }
+function Get-FailedTestSummary {
+    param([hashtable]$Results)
+    $FailedTests = @($Results.GetEnumerator() | Where-Object { $_.Value -eq $false } | Sort-Object -Property Key | ForEach-Object { $_.Key })
+    if ($FailedTests.Count) {
+        return "Failed child tests: $($FailedTests -join ', ')"
+    }
+    return 'No failed child tests'
+}
 function Test-Autopilot {
     <#
     .SYNOPSIS
@@ -2010,7 +2471,7 @@ function Test-Autopilot {
         TPMAttTest            = Test-TPMAttestation
     }
     if ($resultlist.values -contains $false) {
-        Write-Log -Message "$resultlist" -Component "Test$ServiceArea" -Type 3
+        Write-Log -Message (Get-FailedTestSummary -Results $resultlist) -Component "Test$ServiceArea" -Type 3
         return $false
     }
     return $true
@@ -2050,7 +2511,7 @@ function Test-Intune {
         AppAndScript        = Test-AppAndScripts
     }
     if ($resultlist.values -contains $false) {
-        Write-Log -Message "$resultlist" -Component "Test$ServiceArea" -Type 3
+        Write-Log -Message (Get-FailedTestSummary -Results $resultlist) -Component "Test$ServiceArea" -Type 3
         return $false
     }
     return $true
@@ -2119,29 +2580,41 @@ function Merge-ResultFiles {
         New-Variable "ImportedCSV$($i+1)" -Value $(Import-Csv -Path $CSVPath)
     }
     Write-Log 'CSV imported - checking and merging' -Component 'MergeResultFiles'
-    if ($ImportedCSV1.count -ne $ImportedCSV2.count) {
-        Write-Log 'Please ensure that the row counts in these CSV files are the same and that the same tests were used and passed.' -Component 'MergeResultFiles' -Type 3
-        Write-Log 'This is particularly likely to happen if the M365 JSON or a new version of my URL list is selected, since these are subject to change.' -Component 'MergeResultFiles'
-        return $false
-    }
-    $counter = 0
     if ($MergeShowAllResults) { Write-Log 'MergeShowAllResults is selected. All results will be merge into one result output instead of showing only differences' -Component 'MergeResultFiles' }
-    foreach ($CSVLeftObject in $ImportedCSV1) {
-        $Result = Compare-Object -ReferenceObject $CSVLeftObject -DifferenceObject $ImportedCSV2[$counter] -Property ID, URL, Port, DNSResult, TCPResult, HTTPStatusCode, SSLTest, SSLProtocol, Issuer, AuthException, SSLInterception
-        $CSVLeftObject | Add-Member -Name 'ComputerName' -MemberType NoteProperty -Value "$($Script:MergeCSVComputername1)"
-        $CSVLeftObject | Add-Member -Name 'TimeStamp' -MemberType NoteProperty -Value "$($Script:MergeCSVTimestamp1)"
-        if ($Result) {
-            Write-Log "Difference found at $($CSVLeftObject.url)" -Component 'MergeResultFiles'
-            $ImportedCSV2[$counter] | Add-Member -Name 'ComputerName' -MemberType NoteProperty -Value "$($Script:MergeCSVComputername2)"
-            $ImportedCSV2[$counter] | Add-Member -Name 'TimeStamp' -MemberType NoteProperty -Value "$($Script:MergeCSVTimestamp2)"
-            $Script:ComparedResults.add($CSVLeftObject) | Out-Null
-            $Script:ComparedResults.add($ImportedCSV2[$counter]) | Out-Null
-        } elseif ($MergeShowAllResults) {
-            $Script:ComparedResults.add($CSVLeftObject) | Out-Null
-        }
-        $counter++
+    $ResultProperties = 'ID', 'URL', 'Port', 'Protocol', 'ConnectionMethod', 'ProxyAddress', 'ProxyBypassed', 'ProxyError', 'DNSResult', 'TCPResult', 'HTTPStatusCode', 'SSLTest', 'SSLProtocol', 'Issuer', 'AuthException', 'SSLInterception'
+    $GetResultKey = {
+        param($Object)
+        $Method = if ($Object.ConnectionMethod) { $Object.ConnectionMethod } else { 'Direct' }
+        "$($Object.ID)|$($Object.URL)|$($Object.Port)|$($Object.Protocol)|$Method"
     }
-    $Script:ComparedResults = $Script:ComparedResults | Sort-Object -Property url, ComputerName
+    $LeftResults = @{}
+    $RightResults = @{}
+    foreach ($Object in $ImportedCSV1) { $LeftResults[(& $GetResultKey $Object)] = $Object }
+    foreach ($Object in $ImportedCSV2) { $RightResults[(& $GetResultKey $Object)] = $Object }
+    $AllKeys = @($LeftResults.Keys + $RightResults.Keys | Sort-Object -Unique)
+    foreach ($Key in $AllKeys) {
+        $CSVLeftObject = $LeftResults[$Key]
+        $CSVRightObject = $RightResults[$Key]
+        $ComparisonStatus = if (-not($CSVLeftObject)) { 'OnlyInSecond' } elseif (-not($CSVRightObject)) { 'OnlyInFirst' } elseif (Compare-Object -ReferenceObject $CSVLeftObject -DifferenceObject $CSVRightObject -Property $ResultProperties) { 'Changed' } else { 'Unchanged' }
+        if ($ComparisonStatus -ne 'Unchanged') {
+            Write-Log "Result $ComparisonStatus for $Key" -Component 'MergeResultFiles'
+        }
+        if ($ComparisonStatus -ne 'Unchanged' -or $MergeShowAllResults) {
+            if ($CSVLeftObject) {
+                $CSVLeftObject | Add-Member -Name 'ComputerName' -MemberType NoteProperty -Value "$($Script:MergeCSVComputername1)" -Force
+                $CSVLeftObject | Add-Member -Name 'TimeStamp' -MemberType NoteProperty -Value "$($Script:MergeCSVTimestamp1)" -Force
+                $CSVLeftObject | Add-Member -Name 'ComparisonStatus' -MemberType NoteProperty -Value $ComparisonStatus -Force
+                $Script:ComparedResults.add($CSVLeftObject) | Out-Null
+            }
+            if ($CSVRightObject -and $ComparisonStatus -ne 'Unchanged') {
+                $CSVRightObject | Add-Member -Name 'ComputerName' -MemberType NoteProperty -Value "$($Script:MergeCSVComputername2)" -Force
+                $CSVRightObject | Add-Member -Name 'TimeStamp' -MemberType NoteProperty -Value "$($Script:MergeCSVTimestamp2)" -Force
+                $CSVRightObject | Add-Member -Name 'ComparisonStatus' -MemberType NoteProperty -Value $ComparisonStatus -Force
+                $Script:ComparedResults.add($CSVRightObject) | Out-Null
+            }
+        }
+    }
+    $Script:ComparedResults = $Script:ComparedResults | Sort-Object -Property url, port, ConnectionMethod, ComputerName
     return $true
 }
 function Start-Tests {

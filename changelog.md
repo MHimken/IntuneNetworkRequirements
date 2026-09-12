@@ -2,6 +2,21 @@
 
 ## 2026
 
+### 13th of September
+
+- Fix: TLS failures now produce scalar result values instead of occasionally embedding a previous SSL result object
+- Fix: CRL and AIA addresses are extracted and matched by hostname instead of broad string matching
+- Fix: Proxy certificate substitution is detected by comparing direct and proxy certificate thumbprints
+- Update: Certificate issuer and interception details are retained when certificate validation fails
+
+### 11th of September
+
+- Add: Route-aware HTTP and HTTPS testing for direct, environment, Windows Settings, and WinHTTP connections
+- Add: Proxy route, bypass, and error details to CSV and grid results
+- Add: TLS certificate inspection through HTTP CONNECT proxies
+- Update: Result comparisons now match endpoint and connection method, including routes present in only one run
+- Update: Bootstrap web requests use the selected proxy routing policy
+
 ### 1st of September
 
 - Add: TrustMeBro Artificial Service Area for custom URL ID 10000

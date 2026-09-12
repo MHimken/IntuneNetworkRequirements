@@ -1,11 +1,18 @@
-WORK IN PROGRESS - DO NOT USE YET
+# Refreshed from Microsoft Learn sources on 2026-09-01
 "Endpoint","Port","Protocol","SourceIdentifier","ID"
-# IntuneCore
-"manage.microsoft.com", 443, TCP, IntuneCore, 2000
+
+# IntuneCore (2000)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
+#"*.manage.microsoft.com", 443, TCP, IntuneCore, 2000
+#"*.dm.microsoft.com", 443, TCP, IntuneCore, 2000
 "manage.microsoft.com", 80, TCP, IntuneCore, 2000
-"EnterpriseEnrollment-s.manage.microsoft.com", 443, TCP, IntuneCore, 2000
-"EnterpriseEnrollment-s.manage.microsoft.com", 80, TCP, IntuneCore, 2000
-# IntuneAppsAndScripts https://learn.microsoft.com/en-us/intune/intune-service/fundamentals/intune-endpoints?tabs=north-america#network-requirements-for-powershell-scripts-and-win32-apps
+"manage.microsoft.com", 443, TCP, IntuneCore, 2000
+"EnterpriseEnrollment.manage.microsoft.com", 80, TCP, IntuneCore, 2000
+"EnterpriseEnrollment.manage.microsoft.com", 443, TCP, IntuneCore, 2000
+
+# IntuneAppsAndScripts (2001)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#network-requirements-for-powershell-scripts-and-win32-apps
+#"*.events.data.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
 "imeswda-afd-primary.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
 "imeswda-afd-secondary.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
 "imeswda-afd-hotfix.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
@@ -18,7 +25,9 @@ WORK IN PROGRESS - DO NOT USE YET
 "macsidecar.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
 "macsidecareu.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
 "macsidecarap.manage.microsoft.com", 443, TCP, IntuneAppsAndScripts, 2001
-# IntuneApps https://learn.microsoft.com/en-us/intune/intune-service/fundamentals/intune-endpoints?tabs=north-america#intune-core-service LoB?
+
+# IntuneApps (2002)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
 "swda01-mscdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
 "swda01-mscdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
 "swda02-mscdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
@@ -35,120 +44,294 @@ WORK IN PROGRESS - DO NOT USE YET
 "swdd01-mscdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
 "swdd02-mscdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
 "swdd02-mscdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
-# Delivery Optimization https://learn.microsoft.com/en-us/intune/intune-service/fundamentals/intune-endpoints?tabs=north-america#delivery-optimization-dependencies
-# Delivery Optimization https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization-faq#what-hostnames-should-i-allow-through-my-firewall-to-support-delivery-optimization 
-# Delivery Optimization https://learn.microsoft.com/en-us/windows/privacy/manage-windows-11-endpoints
-#"*.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003 # REMOVE
-#"*.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003 # REMOVE
+"swdin01-mscdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
+"swdin01-mscdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
+"swdin02-mscdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
+"swdin02-mscdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
+"aam-content-cdn.manage.microsoft.com", 80, TCP, IntuneApps, 2002
+"aam-content-cdn.manage.microsoft.com", 443, TCP, IntuneApps, 2002
+
+# DeliveryOptimization (2003)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#delivery-optimization-dependencies
+# https://learn.microsoft.com/en-us/windows/deployment/do/waas-delivery-optimization-faq
+# https://kv801.prod.do.dsp.mp.microsoft.com/all
+#"*.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+#"*.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+#"*.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+#"*.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+#"*.dl.delivery.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+#"*.delivery.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"kv801.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"disc801.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"cp801.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"geo.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"geover.prod.do.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
 "dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"dl.delivery.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+"download.windowsupdate.com", 80, TCP, DeliveryOptimization, 2003
+"adl.windows.com", 443, TCP, DeliveryOptimization, 2003
+"tsfe.trafficshaping.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"tsfe.trafficshaping.dsp.mp.microsoft.com", 443, TCP, DeliveryOptimization, 2003
+
+# NTP (2004)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#windows-autopilot-dependencies
+"time.windows.com", 123, UDP, NTP, 2004
+
+# Authentication (2005)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#authentication-dependencies
+#"*.officeconfig.msocdn.com", 443, TCP, Authentication, 2005
+"login.microsoftonline.com", 80, TCP, Authentication, 2005
+"login.microsoftonline.com", 443, TCP, Authentication, 2005
+"graph.windows.net", 80, TCP, Authentication, 2005
+"graph.windows.net", 443, TCP, Authentication, 2005
+"enterpriseregistration.windows.net", 80, TCP, Authentication, 2005
+"enterpriseregistration.windows.net", 443, TCP, Authentication, 2005
+"certauth.enterpriseregistration.windows.net", 80, TCP, Authentication, 2005
+"certauth.enterpriseregistration.windows.net", 443, TCP, Authentication, 2005
+"config.office.com", 443, TCP, Authentication, 2005
+
+# WindowsPushNotification (2006)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#windows-push-notification-services-wns-dependencies
+#"*.notify.windows.com", 443, TCP, WindowsPushNotification, 2006
+#"*.wns.windows.com", 443, TCP, WindowsPushNotification, 2006
+"sinwns1011421.wns.windows.com", 443, TCP, WindowsPushNotification, 2006
+"sin.notify.windows.com", 443, TCP, WindowsPushNotification, 2006
+
+# AndroidAOSP (2007)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#android-aosp-dependencies
+"intunecdnpeasd.manage.microsoft.com", 443, TCP, AndroidAOSP, 2007
+
+# RemoteHelp (2008)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#remote-help
+#"*.support.services.microsoft.com", 443, TCP, RemoteHelp, 2008
+#"*.aria.microsoft.com", 443, TCP, RemoteHelp, 2008
+#"*.events.data.microsoft.com", 443, TCP, RemoteHelp, 2008
+#"*.monitor.azure.com", 443, TCP, RemoteHelp, 2008
+#"*.trouter.communication.microsoft.com", 443, TCP, RemoteHelp, 2008
+#"*.trouter.teams.microsoft.com", 443, TCP, RemoteHelp, 2008
+#"*.trouter.communications.svc.cloud.microsoft", 443, TCP, RemoteHelp, 2008
+#"*.webpubsub.azure.com", 443, TCP, RemoteHelp, 2008
+"remoteassistance.support.services.microsoft.com", 443, TCP, RemoteHelp, 2008
+"teams.microsoft.com", 443, TCP, RemoteHelp, 2008
+"remoteassistanceprodacs.communication.azure.com", 443, TCP, RemoteHelp, 2008
+"remoteassistanceprodacseu.communication.azure.com", 443, TCP, RemoteHelp, 2008
+"edge.skype.com", 443, TCP, RemoteHelp, 2008
+"aadcdn.msftauth.net", 443, TCP, RemoteHelp, 2008
+"aadcdn.msauth.net", 443, TCP, RemoteHelp, 2008
+"wcpstatic.microsoft.com", 443, TCP, RemoteHelp, 2008
+"browser.pipe.aria.microsoft.com", 443, TCP, RemoteHelp, 2008
+"v10c.events.data.microsoft.com", 443, TCP, RemoteHelp, 2008
+"js.monitor.azure.com", 443, TCP, RemoteHelp, 2008
+"edge.microsoft.com", 443, TCP, RemoteHelp, 2008
+"api.flightproxy.skype.com", 443, TCP, RemoteHelp, 2008
+"ecs.communication.microsoft.com", 443, TCP, RemoteHelp, 2008
+"remotehelp.microsoft.com", 443, TCP, RemoteHelp, 2008
+"go-amer.trouter.communications.svc.cloud.microsoft", 443, TCP, RemoteHelp, 2008
+"go-apac.trouter.communications.svc.cloud.microsoft", 443, TCP, RemoteHelp, 2008
+"go-eu.trouter.communications.svc.cloud.microsoft", 443, TCP, RemoteHelp, 2008
+"AMSUA0101-RemoteAssistService-pubsub.webpubsub.azure.com", 443, TCP, RemoteHelp, 2008
+
+# RemoteHelpGovernment (2009)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#remote-help
+#"*.gov.teams.microsoft.us", 443, TCP, RemoteHelpGovernment, 2009
+"remoteassistanceweb-gcc.usgov.communication.azure.us", 443, TCP, RemoteHelpGovernment, 2009
+"remoteassistanceweb.usgov.communication.azure.us", 443, TCP, RemoteHelpGovernment, 2009
+"gcc.remotehelp.microsoft.com", 443, TCP, RemoteHelpGovernment, 2009
+"gcc.relay.remotehelp.microsoft.com", 443, TCP, RemoteHelpGovernment, 2009
+
+# WindowsAutopilot (2010)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#windows-autopilot-dependencies
+#"*.windowsupdate.com", 80, TCP, WindowsAutopilot, 2010
+#"*.windowsupdate.com", 443, TCP, WindowsAutopilot, 2010
+#"*.dl.delivery.mp.microsoft.com", 80, TCP, WindowsAutopilot, 2010
+#"*.dl.delivery.mp.microsoft.com", 443, TCP, WindowsAutopilot, 2010
+#"*.prod.do.dsp.mp.microsoft.com", 80, TCP, WindowsAutopilot, 2010
+#"*.prod.do.dsp.mp.microsoft.com", 443, TCP, WindowsAutopilot, 2010
+#"*.delivery.mp.microsoft.com", 80, TCP, WindowsAutopilot, 2010
+#"*.delivery.mp.microsoft.com", 443, TCP, WindowsAutopilot, 2010
+#"*.update.microsoft.com", 80, TCP, WindowsAutopilot, 2010
+#"*.update.microsoft.com", 443, TCP, WindowsAutopilot, 2010
+#"*.s-microsoft.com", 443, TCP, WindowsAutopilot, 2010
+"clientconfig.passport.net", 443, TCP, WindowsAutopilot, 2010
+"windowsphone.com", 443, TCP, WindowsAutopilot, 2010
+"c.s-microsoft.com", 443, TCP, WindowsAutopilot, 2010
+"ekop.intel.com", 443, TCP, WindowsAutopilot, 2010
+"ekcert.spserv.microsoft.com", 443, TCP, WindowsAutopilot, 2010
+"ftpm.amd.com", 443, TCP, WindowsAutopilot, 2010
+
+# DeviceHealthAttestation (2011)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#migrating-device-health-attestation-compliance-policies-to-microsoft-azure-attestation
+"intunemaape1.eus.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape2.eus2.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape3.cus.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape4.wus.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape5.scus.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape6.ncus.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape7.neu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape8.neu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape9.neu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape10.weu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape11.weu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape12.weu.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape13.jpe.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape17.jpe.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape18.jpe.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"intunemaape19.jpe.attest.azure.net", 443, TCP, DeviceHealthAttestation, 2011
+"has.spserv.microsoft.com", 443, TCP, DeviceHealthAttestation, 2011
+
+# DiagnosticsUpload (2012)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#consolidated-endpoint-list
+"amsua0101lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0102lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0201lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0202lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0401lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0402lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0501lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0502lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0601lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0602lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0701lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0702lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0801lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0901lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsua0902lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0101lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0102lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0201lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0202lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0301lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0302lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0501lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0502lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0601lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0701lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0801lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsub0901lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuc0101lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuc0201lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuc0301lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuc0501lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuc0601lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsud0101lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+"amsuin01lmsas.blob.core.windows.net", 443, TCP, DiagnosticsUpload, 2012
+
+# MicrosoftStore (2013)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#microsoft-store
+"displaycatalog.mp.microsoft.com", 80, TCP, MicrosoftStore, 2013
+"displaycatalog.mp.microsoft.com", 443, TCP, MicrosoftStore, 2013
+"purchase.md.mp.microsoft.com", 80, TCP, MicrosoftStore, 2013
+"purchase.md.mp.microsoft.com", 443, TCP, MicrosoftStore, 2013
+"licensing.mp.microsoft.com", 80, TCP, MicrosoftStore, 2013
+"licensing.mp.microsoft.com", 443, TCP, MicrosoftStore, 2013
+"storeedgefd.dsx.mp.microsoft.com", 80, TCP, MicrosoftStore, 2013
+"storeedgefd.dsx.mp.microsoft.com", 443, TCP, MicrosoftStore, 2013
+"cdn.storeedgefd.dsx.mp.microsoft.com", 80, TCP, MicrosoftStore, 2013
+"cdn.storeedgefd.dsx.mp.microsoft.com", 443, TCP, MicrosoftStore, 2013
+
+# EndpointDiscovery (2014)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
+"go.microsoft.com", 80, TCP, EndpointDiscovery, 2014
+"go.microsoft.com", 443, TCP, EndpointDiscovery, 2014
+
+# FeatureDeployment (2015)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
+"config.edge.skype.com", 443, TCP, FeatureDeployment, 2015
+"ecs.office.com", 443, TCP, FeatureDeployment, 2015
+
+# OrganizationalMessages (2016)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
+"fd.api.orgmsg.microsoft.com", 443, TCP, OrganizationalMessages, 2016
+"ris.prod.api.personalization.ideas.microsoft.com", 443, TCP, OrganizationalMessages, 2016
+
+# PowerShellGallery (2017)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#consolidated-endpoint-list
+#"*.powershellgallery.com", 443, TCP, PowerShellGallery, 2017
+"aka.ms", 443, TCP, PowerShellGallery, 2017
+"cdn.oneget.org", 443, TCP, PowerShellGallery, 2017
+
+# ConsumerIdentity (2018)
+# https://learn.microsoft.com/en-us/intune/fundamentals/endpoints#intune-core-service
+"account.live.com", 443, TCP, ConsumerIdentity, 2018
+"login.live.com", 443, TCP, ConsumerIdentity, 2018
+
+# WindowsUpdate (2019)
+# https://learn.microsoft.com/en-us/windows/privacy/manage-windows-11-endpoints#windows-update
+#"*.windowsupdate.com", 80, TCP, WindowsUpdate, 2019
+#"*.windowsupdate.com", 443, TCP, WindowsUpdate, 2019
+#"*.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
+#"*.update.microsoft.com", 443, TCP, WindowsUpdate, 2019
+#"*.api.cdp.microsoft.com", 80, TCP, WindowsUpdate, 2019
+#"*.api.cdp.microsoft.com", 443, TCP, WindowsUpdate, 2019
+"definitionupdates.microsoft.com", 443, TCP, WindowsUpdate, 2019
+"download.windowsupdate.com", 80, TCP, WindowsUpdate, 2019
+"adl.windows.com", 443, TCP, WindowsUpdate, 2019
+"tsfe.trafficshaping.dsp.mp.microsoft.com", 80, TCP, WindowsUpdate, 2019
+"tsfe.trafficshaping.dsp.mp.microsoft.com", 443, TCP, WindowsUpdate, 2019
+
+# Stale or undocumented endpoints
+# These non-wildcard records remain active for compatibility but are not present in the current in-scope sources.
+
+# Former Intune core observations (2000)
+"EnterpriseEnrollment-s.manage.microsoft.com", 80, TCP, IntuneCore, 2000
+"EnterpriseEnrollment-s.manage.microsoft.com", 443, TCP, IntuneCore, 2000
+
+# Former Delivery Optimization observations (2003)
 "kv501.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "kv601.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "kv701.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-"kv801.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "disc501.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "disc601.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "disc701.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-"disc801.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "cp501.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "cp601.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 "cp701.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-"cp801.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization,
-"geo.prod.do.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-"tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"2.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"2.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"3.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"4.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"7.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"9.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"10.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"11.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"13.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"14.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"15.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
-"16.tlu.dl.delivery.mp.microsoft.com" , 80, TCP, DeliveryOptimization, 2003
+"tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"2.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"3.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"4.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"7.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"9.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"10.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"11.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"13.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"14.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"15.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
+"16.tlu.dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
 
+# Former Windows Update observations (2019)
+"sls.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
+"slscr.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
+"fe1.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
+"fe2.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
+"fe3.update.microsoft.com", 80, TCP, WindowsUpdate, 2019
 
-#"*.update.microsoft.com", 80, TCP, WindowsUpdate, 2003 # REMOVE
-"sls.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
-"slscr.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
-"fe1.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
-"fe2.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
-"fe3.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
-"sls.update.microsoft.com", 80, TCP, WindowsUpdate, 2003
+# Former Azure Edge Intune app hosts (2002)
+"approdimedatahotfix.azureedge.net", 80, TCP, IntuneApps, 2002
+"approdimedatapri.azureedge.net", 80, TCP, IntuneApps, 2002
+"approdimedatasec.azureedge.net", 80, TCP, IntuneApps, 2002
+"euprodimedatahotfix.azureedge.net", 80, TCP, IntuneApps, 2002
+"euprodimedatapri.azureedge.net", 80, TCP, IntuneApps, 2002
+"euprodimedatasec.azureedge.net", 80, TCP, IntuneApps, 2002
+"naprodimedatahotfix.azureedge.net", 80, TCP, IntuneApps, 2002
+"naprodimedatapri.azureedge.net", 80, TCP, IntuneApps, 2002
+"naprodimedatasec.azureedge.net", 80, TCP, IntuneApps, 2002
+"swda01-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swda02-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdb01-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdb02-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdc01-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdc02-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdd01-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdd02-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdin01-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"swdin02-mscdn.azureedge.net", 80, TCP, IntuneApps, 2002
+"intunecdnpeasd.azureedge.net", 80, TCP, AndroidAOSP, 2007
 
-#"*.windowsupdate.com", 80, TCP, WindowsUpdate, 2003 #
-"download.windowsupdate.com", 80, TCP, WindowsUpdate, 2003
-"adl.windows.com", 80, TCP, DeliveryOptimization, 2003
-"dl.delivery.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-"tsfe.trafficshaping.dsp.mp.microsoft.com", 80, TCP, DeliveryOptimization, 2003
-
-"time.windows.com", 123, UDP, 2004
-
-*.s-microsoft.com, 80, TCP, 9984
-clientconfig.passport.net, 80, TCP, 9984
-windowsphone.com, 80, TCP, 9984
-approdimedatahotfix.azureedge.net, 80, TCP, 9984
-approdimedatapri.azureedge.net, 80, TCP, 9984
-approdimedatasec.azureedge.net, 80, TCP, 9984
-euprodimedatahotfix.azureedge.net, 80, TCP, 9984
-euprodimedatapri.azureedge.net, 80, TCP, 9984
-euprodimedatasec.azureedge.net, 80, TCP, 9984
-naprodimedatahotfix.azureedge.net, 80, TCP, 9984
-naprodimedatapri.azureedge.net, 80, TCP, 9984
-naprodimedatasec.azureedge.net, 80, TCP, 9984
-swda01-mscdn.azureedge.net, 80, TCP, 9984
-swda02-mscdn.azureedge.net, 80, TCP, 9984
-swdb01-mscdn.azureedge.net, 80, TCP, 9984
-swdb02-mscdn.azureedge.net, 80, TCP, 9984
-swdc01-mscdn.azureedge.net, 80, TCP, 9984
-swdc02-mscdn.azureedge.net, 80, TCP, 9984
-swdd01-mscdn.azureedge.net, 80, TCP, 9984
-swdd02-mscdn.azureedge.net, 80, TCP, 9984
-swdin01-mscdn.azureedge.net, 80, TCP, 9984
-swdin02-mscdn.azureedge.net, 80, TCP, 9984
-*.notify.windows.com, 80, TCP, 9984
-*.wns.windows.com, 80, TCP, 9984
-ekcert.spserv.microsoft.com, 80, TCP, 9984
-ekop.intel.com, 80, TCP, 9984
-ftpm.amd.com, 80, TCP, 9984
-intunecdnpeasd.azureedge.net, 80, TCP, 9984
-*.monitor.azure.com, 80, TCP, 9984
-*.support.services.microsoft.com, 80, TCP, 9984
-*.trouter.communication.microsoft.com, 80, TCP, 9984
-*.trouter.skype.com, 80, TCP, 9984
-*.trouter.teams.microsoft.com, 80, TCP, 9984
-api.flightproxy.skype.com, 80, TCP, 9984
-ecs.communication.microsoft.com, 80, TCP, 9984
-edge.microsoft.com, 80, TCP, 9984
-edge.skype.com, 80, TCP, 9984
-remoteassistanceprodacs.communication.azure.com, 80, TCP, 9984
-remoteassistanceprodacseu.communication.azure.com, 80, TCP, 9984
-remotehelp.microsoft.com, 80, TCP, 9984
-wcpstatic.microsoft.com, 80, TCP, 9984
-lgmsapeweu.blob.core.windows.net, 80, TCP, 9984
-intunemaape1.eus.attest.azure.net, 80, TCP, 9984
-intunemaape10.weu.attest.azure.net, 80, TCP, 9984
-intunemaape11.weu.attest.azure.net, 80, TCP, 9984
-intunemaape12.weu.attest.azure.net, 80, TCP, 9984
-intunemaape13.jpe.attest.azure.net, 80, TCP, 9984
-intunemaape17.jpe.attest.azure.net, 80, TCP, 9984
-intunemaape18.jpe.attest.azure.net, 80, TCP, 9984
-intunemaape19.jpe.attest.azure.net, 80, TCP, 9984
-intunemaape2.eus2.attest.azure.net, 80, TCP, 9984
-intunemaape3.cus.attest.azure.net, 80, TCP, 9984
-intunemaape4.wus.attest.azure.net, 80, TCP, 9984
-intunemaape5.scus.attest.azure.net, 80, TCP, 9984
-intunemaape7.neu.attest.azure.net, 80, TCP, 9984
-intunemaape8.neu.attest.azure.net, 80, TCP, 9984
-intunemaape9.neu.attest.azure.net, 80, TCP, 9984
-*.webpubsub.azure.com, 80, TCP, 9984
-*.gov.teams.microsoft.us, 80, TCP, 9984
-remoteassistanceweb.usgov.communication.azure.us, 80, TCP, 9984
-config.edge.skype.com, 80, TCP, 9984
-contentauthassetscdn-prod.azureedge.net, 80, TCP, 9984
-contentauthassetscdn-prodeur.azureedge.net, 80, TCP, 9984
-contentauthrafcontentcdn-prod.azureedge.net, 80, TCP, 9984
-contentauthrafcontentcdn-prodeur.azureedge.net, 80, TCP, 9984
-fd.api.orgmsg.microsoft.com, 80, TCP, 9984
-ris.prod.api.personalization.ideas.microsoft.com, 80, TCP, 9984
+# Former Remote Help and content hosts (2008)
+#"*.trouter.skype.com", 80, TCP, RemoteHelp, 2008
+"lgmsapeweu.blob.core.windows.net", 80, TCP, DiagnosticsUpload, 2012
+"contentauthassetscdn-prod.azureedge.net", 80, TCP, RemoteHelp, 2008
+"contentauthassetscdn-prodeur.azureedge.net", 80, TCP, RemoteHelp, 2008
+"contentauthrafcontentcdn-prod.azureedge.net", 80, TCP, RemoteHelp, 2008
+"contentauthrafcontentcdn-prodeur.azureedge.net", 80, TCP, RemoteHelp, 2008
